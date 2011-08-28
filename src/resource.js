@@ -14,6 +14,8 @@
   };
 
   SC.Resource = SC.Object.extend({
+    isSCResource: true,
+
     fetch: function() {
       this.set('resourceState', SC.Resource.Lifecycle.FETCHING);
 
@@ -105,7 +107,11 @@
               schema[name] = function(name, value) {
                 //TODO implement setter
                 if (value === void(0)) {
-                  var klass = SC.getPath(definition.className);
+                  var klass = definition.className;
+                  if (!klass.isSCResource) {
+                    klass = SC.getPath(definition.className);
+                  }
+
                   return klass.create(this.getPath('data.' + path));
                 }
               }.property('data.' + path).cacheable()
@@ -119,6 +125,8 @@
   };
 
   SC.Resource.reopenClass({
+    isSCResource: true,
+
     // Create an instance of this resource. If `options` includes an
     // `id`, first check the identity map and return the existing resource
     // with that ID if found.
