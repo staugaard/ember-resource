@@ -1,4 +1,43 @@
-(function(window) {
+// most associations can be implemented with serialize/deserialize
+// 
+// lazy class lookup and caching in stored schema
+// 
+// easy way to define custom associations requester_id/requesterJson
+// 
+// {
+//   episodes: {
+//     type: SC.ResourceCollection,
+//     itemType: 'Episode',
+//     url: '/channels/%@/episodes'
+//   },
+//   episodes: {
+//     type: SC.ResourceCollection,
+//     itemType: 'Episode',
+//     key: 'episodes',
+//     embedded: true
+//   },
+//   episodes: {
+//     type: SC.ResourceCollection,
+//     itemType: 'Episode',
+//     key: 'episode_ids'
+//   }
+// 
+//   episode_ids: {
+//     type: SC.Array,
+//     itemType: Number
+//   }
+// 
+// }
+
+(function(SC, $) {
+  var isString = function(obj) {
+    return !!(obj === '' || (obj && obj.charCodeAt && obj.substr));
+  };
+
+  isObject = function(obj) {
+    return obj === Object(obj);
+  };
+
   var getJSON = function(url, callback) {
     var options = {
       url: url,
@@ -81,47 +120,113 @@
 
   SC.Resource.reopenClass(SC.Resource.Lifecycle);
 
-  var createSchema = function(definitionSet) {
-    var schema = {};
-    var definition, path;
-    for (name in definitionSet) {
-      if (!definitionSet.hasOwnProperty(name)) continue;
-      definition = definitionSet[name];
-      switch (definition) {
-        case Number:
-          schema[name] = SC.Resource.property.integer;
-          break;
-        case String:
-          schema[name] = SC.Resource.property.string;
-          break;
-        case Boolean:
-          schema[name] = SC.Resource.property.boolean;
-          break;
-        case Date:
-          schema[name] = SC.Resource.property.date;
-          break;
-        default:
-          switch (definition.association) {
-            case 'hasOneNested':
-              path = definition.path || name;
-              schema[name] = function(name, value) {
-                //TODO implement setter
-                if (value === void(0)) {
-                  var klass = definition.className;
-                  if (!klass.isSCResource) {
-                    klass = SC.getPath(definition.className);
-                  }
+  var expandSchemaItem = function(schema, name) {
+    var value = schema[name];
 
-                  return klass.create(this.getPath('data.' + path));
-                }
-              }.property('data.' + path).cacheable()
-              break;
-            default:
-              throw "unknown schema definition";
+    if (value === Number || value === String || value === Boolean || value === Date) {
+      value = {type: value};
+    }
+
+    if (isObject(value) && value.type) {
+
+      if (value.type.isSCResource || isString(value.type)) {
+        value.nested = !!value.nested;
+
+        if (value.nested) {
+          value.key = value.key || name;
+
+          value.serialize = value.serialize || function(instance) {
+            return instance.get('data');
           }
+          value.deserialize = value.deserialize || function(data) {
+            if (isString(value.type)) {
+              value.type = SC.getPath(value.type);
+            }
+            return value.type.create(data);
+          }
+        } else {
+          value.key = value.key || name + '_id';
+          if (!schema[value.key]) {
+            schema[value.key] = Number;
+            expandSchemaItem(schema, value.key);
+          }
+
+          value.serialize = value.serialize || function(instance) {
+            return instance.get('id');
+          }
+          value.deserialize = value.deserialize || function(id) {
+            if (isString(value.type)) {
+              value.type = SC.getPath(value.type);
+            }
+            return value.type.create({id: id});
+          }
+        }
+
+      } else {
+        value.key = value.key || name;
+      }
+
+      var serializer;
+      switch (value.type) {
+        case Number:
+          serializer = function(value) { return Number(value); };
+          break
+        case String:
+          serializer = function(value) { return value.toString(); };
+          break
+        case Boolean:
+          serializer = function(value) { return value === true || value === 'true'; };
+          break
+        case Date:
+          serializer = function(value) { return new Date(value); };
+          break
+      }
+
+      if (serializer) {
+        value.serialize   = value.serialize   || serializer;
+        value.deserialize = value.deserialize || serializer;
       }
     }
+    schema[name] = value;
+  };
+
+  var expandSchema = function(schema) {
+    for (name in schema) {
+      if (schema.hasOwnProperty(name)) {
+        expandSchemaItem(schema, name);
+      }
+    }
+
     return schema;
+  };
+
+  var createSchemaProperties = function(schema) {
+    var properties = {};
+
+    for (propertyName in schema) {
+      if (schema.hasOwnProperty(propertyName)) {
+
+        properties[propertyName] = function(name, value) {
+          var propertyOptions = schema[name];
+          var data = this.get('data');
+
+          if (value === void(0)) {
+            if (!data || !data.hasOwnProperty(propertyOptions.key)) {
+              this.fetch();
+              return;
+            } else {
+              value = propertyOptions.deserialize(SC.getPath(data, propertyOptions.key));
+            }
+          } else {
+            SC.setPath(data, propertyOptions.key, propertyOptions.serialize(value));
+          }
+
+          return value;
+        }.property('data');
+      }
+    }
+
+    return properties;
   };
 
   SC.Resource.reopenClass({
@@ -147,34 +252,6 @@
       return instance;
     },
 
-    // Define a property of a resource.
-    property: function(transforms) {
-      var from = transforms && transforms.from,
-      to = transforms && transforms.to;
-
-      return function(name, value) {
-        var data = SC.get(this, 'data'),
-        val;
-
-        if (!data || !data.hasOwnProperty(name)) {
-          this.fetch();
-          return;
-        }
-
-        if (value !== undefined) {
-          val = to ? to(value) : value;
-          SC.set(data, name, val);
-        } else {
-          value = SC.get(data, name);
-          if (from) {
-            value = from(value);
-          }
-        }
-
-        return value;
-      }.property('data');
-    },
-
     // Parse JSON -- likely returned from an AJAX call -- into the
     // properties for an instance of this resource. Override this method
     // to produce different parsing behavior.
@@ -196,10 +273,13 @@
     //    the JSON.
     define: function(options) {
       options = options || {};
-      var klass = this.extend(createSchema(options.schema));
+      var schema = expandSchema(options.schema);
+
+      var klass = this.extend(createSchemaProperties(schema));
 
       var classOptions = {
-        url: options.url
+        url: options.url,
+        schema: schema
       };
 
       if (options.parse) {
@@ -224,61 +304,6 @@
     }
   });
 
-  SC.Resource.property.string = SC.Resource.property({
-    from: function(raw) {
-      return raw.toString();
-    },
-    to: function(string) {
-      return string.toString();
-    }
-  });
-
-  SC.Resource.property.hash = SC.Resource.property();
-
-  SC.Resource.property.integer = SC.Resource.property({
-    from: function(raw) {
-      return Number(raw);
-    },
-    to: function(number) {
-      return Number(number);
-    }
-  });
-
-  SC.Resource.property.date = SC.Resource.property({
-    from: function(raw) {
-      return new Date(raw);
-    },
-    to: function(date) {
-      return new Date(date);
-    }
-  });
-
-  SC.Resource.property.boolean = SC.Resource.property({
-    from: function(raw) {
-      return raw === true || raw === 'true';
-    },
-    to: function(bool) {
-      return bool === true || bool === 'true';
-    }
-  });
-
-  SC.Resource.resource = function(options) {
-    options = options || {};
-    return function(name, value) {
-      var klass = SC.getPath(options.className);
-      var obj = klass.create({
-        id: this.get(options.property)
-      });
-
-      if (value !== undefined) {
-        SC.set(this, options.property, value.get('id'));
-        return;
-      } else {
-        return obj;
-      }
-    }.property(options.property).cacheable();
-  };
-
   SC.Resource.resources = function(options) {
     options = options || {};
     return function(name, value) {
@@ -301,14 +326,6 @@
 
       return collection;
     }.property('id').cacheable();
-  };
-
-  SC.Resource.nestedResource = function(options) {
-    return {
-      association: 'hasOneNested',
-      className:   options.className,
-      path:        options.path
-    };
   };
 
   SC.ResourceCollection = SC.ArrayProxy.extend({
@@ -368,4 +385,4 @@
       return instance;
     }
   });
-}(this));
+}(SC, jQuery));

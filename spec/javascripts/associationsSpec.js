@@ -1,4 +1,4 @@
-describe('association definition', function() {
+describe('associations', function() {
   var Address = SC.Resource.define({
     schema: {
       street: String,
@@ -11,7 +11,7 @@ describe('association definition', function() {
       var Person = SC.Resource.define({
         schema: {
           name: String,
-          address: SC.Resource.nestedResource({className: Address})
+          address: {type: Address, nested: true}
         }
       });
 
@@ -28,23 +28,25 @@ describe('association definition', function() {
 
       expect(address instanceof Address).toBe(true);
       expect(address.get('data')).toBe(data.address);
+
+      instance.set('address', Address.create({street: '2 Your Street'}));
+      expect(data.address.street).toBe('2 Your Street');
+      expect(data.address.zip).toBeUndefined();
     });
 
-    it('should support path overriding', function() {
+    it('should support key overriding', function() {
       var Person = SC.Resource.define({
         schema: {
           name: String,
-          address: SC.Resource.nestedResource({className: Address, path: 'addresses.home'})
+          address: {type: Address, nested: true, key: 'home_address'}
         }
       });
 
       var data = {
         name: 'Joe Doe',
-        addresses: {
-          home: {
-            street: '1 My Street',
-            zip: 12345
-          }
+        home_address: {
+          street: '1 My Street',
+          zip: 12345
         }
       };
 
@@ -52,7 +54,11 @@ describe('association definition', function() {
       var address  = instance.get('address');
 
       expect(address instanceof Address).toBe(true);
-      expect(address.get('data')).toBe(data.addresses.home);
+      expect(address.get('data')).toBe(data.home_address);
+
+      instance.set('address', Address.create({street: '2 Your Street'}));
+      expect(data.home_address.street).toBe('2 Your Street');
+      expect(data.home_address.zip).toBeUndefined();
     });
   })
 });
