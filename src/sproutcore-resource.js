@@ -1,4 +1,4 @@
-(function(SC, $) {
+(function(SC, $, undefined) {
   var isString = function(obj) {
     return !!(obj === '' || (obj && obj.charCodeAt && obj.substr));
   };
@@ -163,16 +163,16 @@
       var serializer;
       switch (value.type) {
         case Number:
-          serializer = function(v) { return Number(v); };
+          serializer = function(v) { return v === undefined ? undefined : ( v === null ? null : Number(v) ); };
           break
         case String:
-          serializer = function(v) { return v.toString(); };
+          serializer = function(v) { return v === undefined ? undefined : ( v === null ? null : '' + v ); };
           break
         case Boolean:
           serializer = function(v) { return v === true || v === 'true'; };
           break
         case Date:
-          serializer = function(v) { return new Date(v); };
+          serializer = function(v) { return v === undefined ? undefined : ( v === null ? null : new Date(v) ); };
           break
         case Object:
           serializer = function(v) { return v; };
@@ -207,14 +207,14 @@
             var propertyOptions = schema[name];
             var data = this.get('data');
 
-            if (value === void(0)) {
+            if (arguments.length === 1) { // getter
               if (!data || !data.hasOwnProperty(propertyOptions.key)) {
                 this.fetch();
                 return;
               } else {
                 value = propertyOptions.deserialize(SC.getPath(data, propertyOptions.key));
               }
-            } else {
+            } else { // setter
               SC.setPath(data, propertyOptions.key, propertyOptions.serialize(value));
             }
 

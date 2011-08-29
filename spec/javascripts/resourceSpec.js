@@ -23,6 +23,14 @@ describe('A Resource instance', function() {
       model.set('name', 'Patricia');
       expect(model.fetch).not.toHaveBeenCalled();
     });
+
+    it('allows setting a property to undefined', function() {
+      model.set('name', 'Carlos');
+      expect(model.get('name')).toEqual('Carlos');
+      model.set('name', undefined);
+      expect(model.get('name')).toBeUndefined();
+    });
+
   });
 
 });
