@@ -7,7 +7,9 @@
     return obj === Object(obj);
   }
 
-  var isFunction = $.isFunction;
+  var isFunction = $.isFunction,
+      get = SC.get,
+      set = SC.set;
 
   function getJSON(url, callback) {
     var options = {
@@ -27,16 +29,16 @@
     isSCResource: true,
 
     fetch: function() {
-      this.set('resourceState', SC.Resource.Lifecycle.FETCHING);
+      set.call(this, 'resourceState', SC.Resource.Lifecycle.FETCHING);
 
       var self = this;
 
       this.deferedFetch = getJSON(this.resourceURL(), function(json) {
-        self.set('data', self.constructor.parse(json));
+        set.call(self, 'data', self.constructor.parse(json));
       });
 
       this.deferedFetch.always(function() {
-        self.set('resourceState', SC.Resource.Lifecycle.FETCHED);
+        set.call(self, 'resourceState', SC.Resource.Lifecycle.FETCHED);
       });
 
       return this.deferedFetch;
@@ -49,11 +51,11 @@
     // Turn this resource into a JSON object to be saved via AJAX. Override
     // this method to produce different syncing behavior.
     toJSON: function() {
-      return this.get('data');
+      return get.call(this, 'data');
     },
 
     isNew: function() {
-      return !this.get('id');
+      return !get.call(this, 'id');
     },
 
     save: function() {
@@ -82,8 +84,8 @@
       options = options || {};
       options.resourceState = SC.Resource.Lifecycle.INITIALIZING;
       var instance = this._super.call(this, options);
-      if (instance.get('resourceState') === SC.Resource.Lifecycle.INITIALIZING) {
-        instance.set('resourceState', SC.Resource.Lifecycle.UNFETCHED);
+      if (get.call(instance, 'resourceState') === SC.Resource.Lifecycle.INITIALIZING) {
+        set.call(instance, 'resourceState', SC.Resource.Lifecycle.UNFETCHED);
       }
       return instance;
     }
@@ -123,7 +125,7 @@
           }
 
           value.serialize = value.serialize || function(instance) {
-            return instance.get('id');
+            return get.call(instance, 'id');
           };
           value.deserialize = value.deserialize || function(id) {
             if (isString(value.type)) {
@@ -317,7 +319,7 @@
         return this.url(instance);
       } else {
         if (instance) {
-          return this.url + '/' + instance.get('id');
+          return this.url + '/' + get.call(instance, 'id');
         } else {
           return this.url;
         }
@@ -329,16 +331,16 @@
     isSCResourceCollection: true,
     type: SC.Required,
     fetch: function() {
-      if (!this.prePopulated && this.get('resourceState') === SC.Resource.Lifecycle.UNFETCHED) {
-        this.set('resourceState', SC.Resource.Lifecycle.FETCHING);
+      if (!this.prePopulated && get.call(this, 'resourceState') === SC.Resource.Lifecycle.UNFETCHED) {
+        set.call(this, 'resourceState', SC.Resource.Lifecycle.FETCHING);
         var self = this;
 
         this.deferedFetch = this._fetch(function(json) {
-          self.set('content', self.instantiateItems(self.parse(json)));
+          set.call(self, 'content', self.instantiateItems(self.parse(json)));
         });
 
         this.deferedFetch.always(function() {
-          self.set('resourceState', SC.Resource.Lifecycle.FETCHED);
+          set.call(self, 'resourceState', SC.Resource.Lifecycle.FETCHED);
         });
       }
       return this.deferedFetch;
