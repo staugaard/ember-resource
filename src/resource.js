@@ -3,9 +3,11 @@
     return !!(obj === '' || (obj && obj.charCodeAt && obj.substr));
   };
 
-  isObject = function(obj) {
+  var isObject = function(obj) {
     return obj === Object(obj);
   };
+
+  var isFunction = $.isFunction;
 
   var getJSON = function(url, callback) {
     var options = {
@@ -131,6 +133,29 @@
           }
         }
 
+      } else if(value.type.isSCResourceCollection) {
+        if (value.url) {
+          value.deserialize = value.deserialize || function(options) {
+            if (isString(value.itemType)) {
+              value.itemType = SC.getPath(value.itemType);
+            }
+            options.type = value.itemType;
+        
+            return value.type.create(options);
+          }
+        } else if (value.nested) {
+          value.key = value.key || name;
+          value.deserialize = value.deserialize || function(data) {
+            if (isString(value.itemType)) {
+              value.itemType = SC.getPath(value.itemType);
+            }
+            return value.type.create({
+              content: data,
+              type: value.itemType,
+              parse: value.parse
+            });
+          }
+        }
       } else {
         value.key = value.key || name;
       }
@@ -160,7 +185,7 @@
   };
 
   var expandSchema = function(schema) {
-    for (name in schema) {
+    for (var name in schema) {
       if (schema.hasOwnProperty(name)) {
         expandSchemaItem(schema, name);
       }
@@ -172,26 +197,45 @@
   var createSchemaProperties = function(schema) {
     var properties = {};
 
-    for (propertyName in schema) {
+    for (var propertyName in schema) {
       if (schema.hasOwnProperty(propertyName)) {
+        if (schema[propertyName].key) {
+          properties[propertyName] = function(name, value) {
+            var propertyOptions = schema[name];
+            var data = this.get('data');
 
-        properties[propertyName] = function(name, value) {
-          var propertyOptions = schema[name];
-          var data = this.get('data');
-
-          if (value === void(0)) {
-            if (!data || !data.hasOwnProperty(propertyOptions.key)) {
-              this.fetch();
-              return;
+            if (value === void(0)) {
+              if (!data || !data.hasOwnProperty(propertyOptions.key)) {
+                this.fetch();
+                return;
+              } else {
+                value = propertyOptions.deserialize(SC.getPath(data, propertyOptions.key));
+              }
             } else {
-              value = propertyOptions.deserialize(SC.getPath(data, propertyOptions.key));
+              SC.setPath(data, propertyOptions.key, propertyOptions.serialize(value));
             }
-          } else {
-            SC.setPath(data, propertyOptions.key, propertyOptions.serialize(value));
-          }
 
-          return value;
-        }.property('data');
+            return value;
+          }.property('data');
+        } else if (schema[propertyName].url) {
+          properties[propertyName] = function(name, value) {
+            var propertyOptions = schema[name];
+        
+            if (value === void(0)) {
+              var options = SC.copy(propertyOptions);
+        
+              if ($.isFunction(options.url)) {
+                options.url = options.url(this);
+              } else if ('string' === typeof options.url) {
+                options.url = options.url.fmt(this.get('id'));
+              }
+        
+              return propertyOptions.deserialize(options);
+            } else {
+              throw "You can not set this property";
+            }
+          }.property('id');
+        }
       }
     }
 
@@ -273,43 +317,16 @@
     }
   });
 
-  SC.Resource.resources = function(options) {
-    options = options || {};
-    return function(name, value) {
-      var collectionOptions = {
-        type: SC.getPath(options.className),
-        url: options.url
-      };
-
-      if ($.isFunction(options.url)) {
-        collectionOptions.url = options.url(this);
-      } else if ('string' === typeof options.url) {
-        collectionOptions.url = options.url.fmt(this.get('id'));
-      }
-
-      if (options.parse) {
-        collectionOptions.parse = options.parse;
-      }
-
-      var collection = SC.ResourceCollection.create(collectionOptions);
-
-      return collection;
-    }.property('id').cacheable();
-  };
-
   SC.ResourceCollection = SC.ArrayProxy.extend({
+    isSCResourceCollection: true,
     type: SC.Required,
     fetch: function() {
       if (!this.prePopulated && this.get('resourceState') === SC.Resource.Lifecycle.UNFETCHED) {
         this.set('resourceState', SC.Resource.Lifecycle.FETCHING);
-        var content = [],
         self = this;
 
         this.deferedFetch = this._fetch(function(json) {
-          _.each(self.parse(json), function(itemAttributes) {
-            content.push(self.type.create(itemAttributes));
-          });
-          self.set('content', content);
+          self.set('content', self.instantiateItems(self.parse(json)));
         });
 
         this.deferedFetch.always(function() {
@@ -321,6 +338,15 @@
     _fetch: function(callback) {
       return getJSON(this.url || this.type.resourceURL(), callback);
     },
+    instantiateItems: function(items) {
+      return items.map(function(item) {
+        if (item instanceof this.type) {
+          return item;
+        } else {
+          return this.type.create(item);
+        }
+      }, this);
+    },
     parse: function(json) {
       return _.map(json, this.type.parse);
     },
@@ -329,7 +355,7 @@
         this.fetch();
         return this.realContent;
       } else {
-        this.realContent = value;
+        this.realContent = this.instantiateItems(value);
         return value;
       }
     }.property()
@@ -338,6 +364,7 @@
   SC.ResourceCollection.reopenClass(SC.Resource.Lifecycle);
 
   SC.ResourceCollection.reopenClass({
+    isSCResourceCollection: true,
     create: function(options) {
       options = options || {};
       var content = options.content;
