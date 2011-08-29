@@ -18,7 +18,7 @@
 
     if (SC.Resource.errorHandler) {
       options.error = SC.Resource.errorHandler;
-    };
+    }
 
     return $.ajax(options);
   };
@@ -37,7 +37,7 @@
 
       this.deferedFetch.always(function() {
         self.set('resourceState', SC.Resource.Lifecycle.FETCHED);
-      })
+      });
 
       return this.deferedFetch;
     },
@@ -79,7 +79,7 @@
     FETCHING:     20,
     FETCHED:      30,
     create: function(options) {
-      options = options || {}
+      options = options || {};
       options.resourceState = SC.Resource.Lifecycle.INITIALIZING;
       var instance = this._super.call(this, options);
       if (instance.get('resourceState') === SC.Resource.Lifecycle.INITIALIZING) {
@@ -108,13 +108,13 @@
 
           value.serialize = value.serialize || function(instance) {
             return instance.get('data');
-          }
+          };
           value.deserialize = value.deserialize || function(data) {
             if (isString(value.type)) {
               value.type = SC.getPath(value.type);
             }
             return value.type.create(data);
-          }
+          };
         } else {
           value.key = value.key || name + '_id';
           if (!schema[value.key]) {
@@ -124,13 +124,13 @@
 
           value.serialize = value.serialize || function(instance) {
             return instance.get('id');
-          }
+          };
           value.deserialize = value.deserialize || function(id) {
             if (isString(value.type)) {
               value.type = SC.getPath(value.type);
             }
             return value.type.create({id: id});
-          }
+          };
         }
 
       } else if(value.type.isSCResourceCollection) {
@@ -140,9 +140,9 @@
               value.itemType = SC.getPath(value.itemType);
             }
             options.type = value.itemType;
-        
+
             return value.type.create(options);
-          }
+          };
         } else if (value.nested) {
           value.key = value.key || name;
           value.deserialize = value.deserialize || function(data) {
@@ -154,7 +154,7 @@
               type: value.itemType,
               parse: value.parse
             });
-          }
+          };
         }
       } else {
         value.key = value.key || name;
@@ -164,19 +164,19 @@
       switch (value.type) {
         case Number:
           serializer = function(v) { return v === undefined ? undefined : ( v === null ? null : Number(v) ); };
-          break
+          break;
         case String:
           serializer = function(v) { return v === undefined ? undefined : ( v === null ? null : '' + v ); };
-          break
+          break;
         case Boolean:
           serializer = function(v) { return v === true || v === 'true'; };
-          break
+          break;
         case Date:
           serializer = function(v) { return v === undefined ? undefined : ( v === null ? null : new Date(v) ); };
-          break
+          break;
         case Object:
           serializer = function(v) { return v; };
-          break
+          break;
       }
 
       if (serializer) {
@@ -223,16 +223,16 @@
         } else if (schema[propertyName].url) {
           properties[propertyName] = function(name, value) {
             var propertyOptions = schema[name];
-        
+
             if (value === void(0)) {
               var options = SC.copy(propertyOptions);
-        
+
               if ($.isFunction(options.url)) {
                 options.url = options.url(this);
               } else if ('string' === typeof options.url) {
                 options.url = options.url.fmt(this.get('id'));
               }
-        
+
               return propertyOptions.deserialize(options);
             } else {
               // throw "You can not set this property";
@@ -334,7 +334,7 @@
 
         this.deferedFetch.always(function() {
           self.set('resourceState', SC.Resource.Lifecycle.FETCHED);
-        })
+        });
       }
       return this.deferedFetch;
     },
