@@ -94,7 +94,7 @@
   var expandSchemaItem = function(schema, name) {
     var value = schema[name];
 
-    if (value === Number || value === String || value === Boolean || value === Date) {
+    if (value === Number || value === String || value === Boolean || value === Date || value === Object) {
       value = {type: value};
     }
 
@@ -163,16 +163,19 @@
       var serializer;
       switch (value.type) {
         case Number:
-          serializer = function(value) { return Number(value); };
+          serializer = function(v) { return Number(v); };
           break
         case String:
-          serializer = function(value) { return value.toString(); };
+          serializer = function(v) { return v.toString(); };
           break
         case Boolean:
-          serializer = function(value) { return value === true || value === 'true'; };
+          serializer = function(v) { return v === true || v === 'true'; };
           break
         case Date:
-          serializer = function(value) { return new Date(value); };
+          serializer = function(v) { return new Date(v); };
+          break
+        case Object:
+          serializer = function(v) { return v; };
           break
       }
 
@@ -216,7 +219,7 @@
             }
 
             return value;
-          }.property('data');
+          }.property('data').cacheable();
         } else if (schema[propertyName].url) {
           properties[propertyName] = function(name, value) {
             var propertyOptions = schema[name];
@@ -232,9 +235,9 @@
         
               return propertyOptions.deserialize(options);
             } else {
-              throw "You can not set this property";
+              // throw "You can not set this property";
             }
-          }.property('id');
+          }.property('id').cacheable();
         }
       }
     }
