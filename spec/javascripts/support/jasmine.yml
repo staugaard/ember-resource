@@ -13,7 +13,7 @@
 src_files:
   - vendor/jquery-1.6.2.js
   - vendor/sproutcore-2.0.beta.3.js
-  - src/resource.js
+  - src/sproutcore-resource.js
 
 # stylesheets
 #
