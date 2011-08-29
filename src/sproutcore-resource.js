@@ -1,15 +1,15 @@
 (function(undefined) {
-  var isString = function(obj) {
+  function isString(obj) {
     return !!(obj === '' || (obj && obj.charCodeAt && obj.substr));
-  };
+  }
 
-  var isObject = function(obj) {
+  function isObject(obj) {
     return obj === Object(obj);
-  };
+  }
 
   var isFunction = $.isFunction;
 
-  var getJSON = function(url, callback) {
+  function getJSON(url, callback) {
     var options = {
       url: url,
       dataType: 'json',
@@ -21,7 +21,7 @@
     }
 
     return $.ajax(options);
-  };
+  }
 
   SC.Resource = SC.Object.extend({
     isSCResource: true,
@@ -91,7 +91,7 @@
 
   SC.Resource.reopenClass(SC.Resource.Lifecycle);
 
-  var expandSchemaItem = function(schema, name) {
+  function expandSchemaItem(schema, name) {
     var value = schema[name];
 
     if (value === Number || value === String || value === Boolean || value === Date || value === Object) {
@@ -185,9 +185,9 @@
       }
     }
     schema[name] = value;
-  };
+  }
 
-  var expandSchema = function(schema) {
+  function expandSchema(schema) {
     for (var name in schema) {
       if (schema.hasOwnProperty(name)) {
         expandSchemaItem(schema, name);
@@ -195,7 +195,7 @@
     }
 
     return schema;
-  };
+  }
 
   // Build and return the function for a given regular property.
   function createPropertyFunction(propertyOptions) {
@@ -248,7 +248,7 @@
     }
 
     return properties;
-  };
+  }
 
   SC.Resource.reopenClass({
     isSCResource: true,
