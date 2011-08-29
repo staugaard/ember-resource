@@ -197,48 +197,53 @@
     return schema;
   };
 
-  var createSchemaProperties = function(schema) {
-    var properties = {};
+  // Build and return the function for a given regular property.
+  function createPropertyFunction(propertyOptions) {
+    return function(name, value) {
+      var data = this.get('data');
+
+      if (arguments.length === 1) { // getter
+        if (!data || !data.hasOwnProperty(propertyOptions.key)) {
+          this.fetch();
+          return;
+        } else {
+          value = propertyOptions.deserialize(SC.getPath(data, propertyOptions.key));
+        }
+      } else { // setter
+        SC.setPath(data, propertyOptions.key, propertyOptions.serialize(value));
+      }
+
+      return value;
+    }.property('data').cacheable();
+  }
+
+  // Build and return the function for a given HasMany property.
+  function createHasManyFunction(propertyOptions) {
+    return function(name, value) {
+      if (value === void(0)) {
+        var options = SC.copy(propertyOptions);
+
+        if ($.isFunction(options.url)) {
+          options.url = options.url(this);
+        } else if ('string' === typeof options.url) {
+          options.url = options.url.fmt(this.get('id'));
+        }
+
+        return propertyOptions.deserialize(options);
+      } else {
+        // throw "You can not set this property";
+      }
+    }.property('id').cacheable();
+  }
+
+  function createSchemaProperties(schema) {
+    var properties = {}, propertyOptions;
 
     for (var propertyName in schema) {
       if (schema.hasOwnProperty(propertyName)) {
-        if (schema[propertyName].key) {
-          properties[propertyName] = function(name, value) {
-            var propertyOptions = schema[name];
-            var data = this.get('data');
-
-            if (arguments.length === 1) { // getter
-              if (!data || !data.hasOwnProperty(propertyOptions.key)) {
-                this.fetch();
-                return;
-              } else {
-                value = propertyOptions.deserialize(SC.getPath(data, propertyOptions.key));
-              }
-            } else { // setter
-              SC.setPath(data, propertyOptions.key, propertyOptions.serialize(value));
-            }
-
-            return value;
-          }.property('data').cacheable();
-        } else if (schema[propertyName].url) {
-          properties[propertyName] = function(name, value) {
-            var propertyOptions = schema[name];
-
-            if (value === void(0)) {
-              var options = SC.copy(propertyOptions);
-
-              if ($.isFunction(options.url)) {
-                options.url = options.url(this);
-              } else if ('string' === typeof options.url) {
-                options.url = options.url.fmt(this.get('id'));
-              }
-
-              return propertyOptions.deserialize(options);
-            } else {
-              // throw "You can not set this property";
-            }
-          }.property('id').cacheable();
-        }
+        propertyOptions = schema[propertyName];
+        properties[propertyName] = propertyOptions.key ? createPropertyFunction(propertyOptions)
+                                                       : createHasManyFunction(propertyOptions);
       }
     }
 
