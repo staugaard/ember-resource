@@ -1,34 +1,3 @@
-// most associations can be implemented with serialize/deserialize
-// 
-// lazy class lookup and caching in stored schema
-// 
-// easy way to define custom associations requester_id/requesterJson
-// 
-// {
-//   episodes: {
-//     type: SC.ResourceCollection,
-//     itemType: 'Episode',
-//     url: '/channels/%@/episodes'
-//   },
-//   episodes: {
-//     type: SC.ResourceCollection,
-//     itemType: 'Episode',
-//     key: 'episodes',
-//     embedded: true
-//   },
-//   episodes: {
-//     type: SC.ResourceCollection,
-//     itemType: 'Episode',
-//     key: 'episode_ids'
-//   }
-// 
-//   episode_ids: {
-//     type: SC.Array,
-//     itemType: Number
-//   }
-// 
-// }
-
 (function(SC, $) {
   var isString = function(obj) {
     return !!(obj === '' || (obj && obj.charCodeAt && obj.substr));

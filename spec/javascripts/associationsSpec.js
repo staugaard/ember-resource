@@ -60,5 +60,72 @@ describe('associations', function() {
       expect(data.home_address.street).toBe('2 Your Street');
       expect(data.home_address.zip).toBeUndefined();
     });
-  })
+  });
+
+  describe('has many', function() {
+    var Person;
+
+    describe('with url', function() {
+
+      beforeEach(function() {
+        Person = SC.Resource.define({
+          schema: {
+            name: String,
+            home_address: {
+              type: SC.ResourceCollection,
+              itemType: Address,
+              url: '/people/%@/addresses'
+            },
+            work_addresses: {
+              type: SC.ResourceCollection,
+              itemType: Address,
+              url: function(instance) {
+                return '/people/' + instance.get('id') + '/addresses';
+              }
+            }
+          }
+        });
+      });
+
+    });
+
+    describe('nested', function() {
+      beforeEach(function() {
+        Person = SC.Resource.define({
+          schema: {
+            name: String,
+            home_address: {
+              type: SC.ResourceCollection,
+              itemType: Address,
+              nested: true
+            },
+            work_addresses: {
+              type: SC.ResourceCollection,
+              itemType: Address,
+              nested: true,
+              key: 'office_addresses'
+            }
+          }
+        });
+      });
+
+    });
+
+    describe('in array', function() {
+      beforeEach(function() {
+        Person = SC.Resource.define({
+          schema: {
+            name: String,
+            home_address: {
+              type: SC.ResourceCollection,
+              itemType: Address,
+              key: 'home_address_ids'
+            }
+          }
+        });
+      });
+
+    });
+
+  });
 });
