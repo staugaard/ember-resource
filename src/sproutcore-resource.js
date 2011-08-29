@@ -1,4 +1,4 @@
-(function(SC, $, undefined) {
+(function(undefined) {
   var isString = function(obj) {
     return !!(obj === '' || (obj && obj.charCodeAt && obj.substr));
   };
@@ -326,7 +326,7 @@
     fetch: function() {
       if (!this.prePopulated && this.get('resourceState') === SC.Resource.Lifecycle.UNFETCHED) {
         this.set('resourceState', SC.Resource.Lifecycle.FETCHING);
-        self = this;
+        var self = this;
 
         this.deferedFetch = this._fetch(function(json) {
           self.set('content', self.instantiateItems(self.parse(json)));
@@ -384,4 +384,4 @@
       return instance;
     }
   });
-}(SC, jQuery));
+}());
