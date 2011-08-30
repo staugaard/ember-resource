@@ -1,4 +1,9 @@
 (function(undefined) {
+  var expandSchema, expandSchemaItem, propertyFunction,
+      createPropertyFunction, hasManyFunction, createSchemaProperties,
+      expandRemoteHasOneSchemaItem, expandRemoteHasManySchemaItem,
+      expandNestedHasOneSchemaItem, expandNestedHasManySchemaItem;
+
   function isString(obj) {
     return !!(obj === '' || (obj && obj.charCodeAt && obj.substr));
   }
@@ -91,7 +96,7 @@
 
   SC.Resource.reopenClass(SC.Resource.Lifecycle);
 
-  function expandNestedHasOneSchemaItem(name, schema) {
+  expandNestedHasOneSchemaItem = function(name, schema) {
     var value = schema[name];
     value.path = value.path || name;
 
@@ -108,9 +113,9 @@
       }
       return value.type.create(data);
     };
-  }
+  };
 
-  function expandRemoteHasOneSchemaItem(name, schema) {
+  expandRemoteHasOneSchemaItem = function(name, schema) {
     var value = schema[name];
     value.path = value.path || name + '_id';
     if (!schema[value.path]) {
@@ -130,9 +135,9 @@
       }
       return value.type.create({id: id});
     };
-  }
+  };
 
-  function expandRemoteHasManySchemaItem(name, schema) {
+  expandRemoteHasManySchemaItem = function(name, schema) {
     var value = schema[name];
     value.deserialize = value.deserialize || function(options) {
       if (isString(value.itemType)) {
@@ -142,9 +147,9 @@
 
       return value.type.create(options);
     };
-  }
+  };
 
-  function expandNestedHasManySchemaItem(name, schema) {
+  expandNestedHasManySchemaItem = function(name, schema) {
     var value = schema[name];
     value.path = value.path || name;
     value.deserialize = value.deserialize || function(data) {
@@ -157,9 +162,9 @@
         parse: value.parse
       });
     };
-  }
+  };
 
-  function expandSchemaItem(name, schema) {
+  expandSchemaItem = function(name, schema) {
     var value = schema[name];
 
     if (value === Number || value === String || value === Boolean || value === Date || value === Object) {
@@ -212,9 +217,9 @@
         value.deserialize = value.deserialize || serializer;
       }
     }
-  }
+  };
 
-  function expandSchema(schema) {
+  expandSchema = function(schema) {
     for (var name in schema) {
       if (schema.hasOwnProperty(name)) {
         expandSchemaItem(name, schema);
@@ -222,10 +227,10 @@
     }
 
     return schema;
-  }
+  };
 
   // the function for a given regular property
-  var propertyFunction = function(name, value) {
+  propertyFunction = function(name, value) {
     var propertyOptions = this.constructor.schema[name];
     var data = SC.get(this, 'data');
 
@@ -247,29 +252,29 @@
   };
 
   // Build a cumputed property function for a regular property.
-  function createPropertyFunction(propertyOptions) {
+  createPropertyFunction = function(propertyOptions) {
     return propertyFunction.property('data.' + propertyOptions.path).cacheable();
-  }
+  };
 
   // The computed property function for a url based has-many association
-   var hasManyFunction = function(name, value) {
+  hasManyFunction = function(name, value) {
     if (arguments.length === 1) { // getter
       var propertyOptions = this.constructor.schema[name];
       var options = SC.copy(propertyOptions);
-  
+
       if ($.isFunction(options.url)) {
         options.url = options.url(this);
       } else if ('string' === typeof options.url) {
         options.url = options.url.fmt(SC.get(this, 'id'));
       }
-  
+
       return propertyOptions.deserialize(options);
     } else { // setter
       // throw "You can not set this property";
     }
   }.property('id').cacheable();
 
-  function createSchemaProperties(schema) {
+  createSchemaProperties = function(schema) {
     var properties = {}, propertyOptions;
 
     for (var propertyName in schema) {
@@ -281,7 +286,7 @@
     }
 
     return properties;
-  }
+  };
 
   SC.Resource.reopenClass({
     isSCResource: true,
