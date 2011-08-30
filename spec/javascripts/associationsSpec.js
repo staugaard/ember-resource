@@ -34,19 +34,21 @@ describe('associations', function() {
       expect(data.address.zip).toBeUndefined();
     });
 
-    it('should support key overriding', function() {
+    it('should support path overriding', function() {
       var Person = SC.Resource.define({
         schema: {
           name: String,
-          address: {type: Address, nested: true, key: 'home_address'}
+          address: {type: Address, nested: true, path: 'addresses.home'}
         }
       });
 
       var data = {
         name: 'Joe Doe',
-        home_address: {
-          street: '1 My Street',
-          zip: 12345
+        addresses: {
+          home: {
+            street: '1 My Street',
+            zip: 12345
+          }
         }
       };
 
@@ -54,11 +56,11 @@ describe('associations', function() {
       var address  = instance.get('address');
 
       expect(address instanceof Address).toBe(true);
-      expect(address.get('data')).toBe(data.home_address);
+      expect(address.get('data')).toBe(data.addresses.home);
 
       instance.set('address', Address.create({street: '2 Your Street'}));
-      expect(data.home_address.street).toBe('2 Your Street');
-      expect(data.home_address.zip).toBeUndefined();
+      expect(data.addresses.home.street).toBe('2 Your Street');
+      expect(data.addresses.home.zip).toBeUndefined();
     });
   });
 
@@ -123,7 +125,7 @@ describe('associations', function() {
               type: SC.ResourceCollection,
               itemType: Address,
               nested: true,
-              key: 'office_addresses'
+              path: 'office_addresses'
             }
           }
         });
@@ -177,7 +179,7 @@ describe('associations', function() {
             home_addresses: {
               type: SC.ResourceCollection,
               itemType: Address,
-              key: 'home_address_ids'
+              path: 'home_address_ids'
             }
           }
         });

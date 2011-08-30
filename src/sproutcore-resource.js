@@ -93,7 +93,7 @@
 
   function expandNestedHasOneSchemaItem(name, schema) {
     var value = schema[name];
-    value.key = value.key || name;
+    value.path = value.path || name;
 
     value.serialize = value.serialize || function(instance) {
       return SC.get(instance, 'data');
@@ -108,10 +108,10 @@
 
   function expandRemoteHasOneSchemaItem(name, schema) {
     var value = schema[name];
-    value.key = value.key || name + '_id';
-    if (!schema[value.key]) {
-      schema[value.key] = Number;
-      expandSchemaItem(value.key, schema);
+    value.path = value.path || name + '_id';
+    if (!schema[value.path]) {
+      schema[value.path] = Number;
+      expandSchemaItem(value.path, schema);
     }
 
     value.serialize = value.serialize || function(instance) {
@@ -139,7 +139,7 @@
 
   function expandNestedHasManySchemaItem(name, schema) {
     var value = schema[name];
-    value.key = value.key || name;
+    value.path = value.path || name;
     value.deserialize = value.deserialize || function(data) {
       if (isString(value.itemType)) {
         value.itemType = SC.getPath(value.itemType);
@@ -178,7 +178,7 @@
           expandNestedHasManySchemaItem(name, schema);
         }
       } else { // a regular attribute
-        value.key = value.key || name;
+        value.path = value.path || name;
       }
 
       var serializer;
@@ -223,14 +223,17 @@
     var data = SC.get(this, 'data');
 
     if (arguments.length === 1) { // getter
-      if (!data || !data.hasOwnProperty(propertyOptions.key)) {
+      var serializedValue;
+      if (data) serializedValue = SC.getPath(data, propertyOptions.path);
+
+      if (serializedValue === undefined) {
         this.fetch();
         return;
       } else {
-        value = propertyOptions.deserialize(SC.getPath(data, propertyOptions.key));
+        value = propertyOptions.deserialize(serializedValue);
       }
     } else { // setter
-      SC.setPath(data, propertyOptions.key, propertyOptions.serialize(value));
+      SC.setPath(data, propertyOptions.path, propertyOptions.serialize(value));
     }
 
     return value;
@@ -238,7 +241,7 @@
 
   // Build a cumputed property function for a regular property.
   function createPropertyFunction(propertyOptions) {
-    return propertyFunction.property('data.' + propertyOptions.key).cacheable();
+    return propertyFunction.property('data.' + propertyOptions.path).cacheable();
   }
 
   // The computed property function for a url based has-many association
@@ -265,8 +268,8 @@
     for (var propertyName in schema) {
       if (schema.hasOwnProperty(propertyName)) {
         propertyOptions = schema[propertyName];
-        properties[propertyName] = propertyOptions.key ? createPropertyFunction(propertyOptions)
-                                                       : hasManyFunction;
+        properties[propertyName] = propertyOptions.path ? createPropertyFunction(propertyOptions)
+                                                        : hasManyFunction;
       }
     }
 

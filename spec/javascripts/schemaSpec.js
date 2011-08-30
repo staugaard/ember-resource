@@ -7,7 +7,7 @@ describe('schema definition', function() {
 
       Model = SC.Resource.define({
         schema: {
-          id:       {type: Number, key: '_id'},
+          id:       {type: Number, path: 'somewhere.deep.id'},
           size:     {type: Number},
           age:      Number,
           name:     String,
@@ -19,38 +19,38 @@ describe('schema definition', function() {
       });
     });
 
-    it('should use the specified key if given', function() {
-      expect(Model.schema.id.key).toBe('_id');
+    it('should use the specified path if given', function() {
+      expect(Model.schema.id.path).toBe('somewhere.deep.id');
     });
 
-    it('should use the attribute name as key if not specified', function() {
-      expect(Model.schema.size.key).toBe('size');
+    it('should use the attribute name as path if not specified', function() {
+      expect(Model.schema.size.path).toBe('size');
     });
 
     it('should support Number', function() {
       expect(Model.schema.age.type).toBe(Number);
-      expect(Model.schema.age.key).toBe('age');
+      expect(Model.schema.age.path).toBe('age');
       expect(Model.schema.age.serialize).toBeDefined();
       expect(Model.schema.age.deserialize).toBeDefined();
     })
 
     it('should support String', function() {
       expect(Model.schema.name.type).toBe(String);
-      expect(Model.schema.name.key).toBe('name');
+      expect(Model.schema.name.path).toBe('name');
       expect(Model.schema.name.serialize).toBeDefined();
       expect(Model.schema.name.deserialize).toBeDefined();
     })
 
     it('should support Date', function() {
       expect(Model.schema.birthday.type).toBe(Date);
-      expect(Model.schema.birthday.key).toBe('birthday');
+      expect(Model.schema.birthday.path).toBe('birthday');
       expect(Model.schema.birthday.serialize).toBeDefined();
       expect(Model.schema.birthday.deserialize).toBeDefined();
     })
 
     it('should support Boolean', function() {
       expect(Model.schema.single.type).toBe(Boolean);
-      expect(Model.schema.single.key).toBe('single');
+      expect(Model.schema.single.path).toBe('single');
       expect(Model.schema.single.serialize).toBeDefined();
       expect(Model.schema.single.deserialize).toBeDefined();
     })
@@ -80,27 +80,27 @@ describe('schema definition', function() {
       Model = SC.Resource.define({
         schema: {
           home_address:  {type: Address},
-          work_address:  {type: Address, key: 'work_addr_id'},
+          work_address:  {type: Address, path: 'work_addr_id'},
           work_addr_id:  String,
           other_address: {type: Address, nested: true}
         }
       });
     });
 
-    it('should use the specified key when given', function() {
-      expect(Model.schema.work_address.key).toBe('work_addr_id');
+    it('should use the specified path when given', function() {
+      expect(Model.schema.work_address.path).toBe('work_addr_id');
     });
 
-    it('should guess a key from the name when not given', function() {
-      expect(Model.schema.home_address.key).toBe('home_address_id');
+    it('should guess a path from the name when not given', function() {
+      expect(Model.schema.home_address.path).toBe('home_address_id');
     });
 
-    it('should define a Number attribute at the key if not present', function() {
+    it('should define a Number attribute at the path if not present', function() {
       expect(Model.schema.home_address_id).toBeDefined();
       expect(Model.schema.home_address_id.type).toBe(Number);
     });
 
-    it('should not override the attribute at the key if present', function() {
+    it('should not override the attribute at the path if present', function() {
       expect(Model.schema.work_addr_id).toBeDefined();
       expect(Model.schema.work_addr_id.type).toBe(String);
     });
