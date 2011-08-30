@@ -227,7 +227,7 @@
       if (data) serializedValue = SC.getPath(data, propertyOptions.path);
 
       if (serializedValue === undefined) {
-        this.fetch();
+        SC.run.next(this, this.fetch);
         return;
       } else {
         value = propertyOptions.deserialize(serializedValue);
@@ -386,7 +386,7 @@
     },
     content: function(name, value) {
       if (arguments.length === 1) { // getter
-        this.fetch();
+        SC.run.next(this, this.fetch);
         return this.realContent;
       } else { // setter
         this.realContent = this.instantiateItems(value);
