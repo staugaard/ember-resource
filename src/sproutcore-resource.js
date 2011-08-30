@@ -96,9 +96,13 @@
     value.path = value.path || name;
 
     value.serialize = value.serialize || function(instance) {
+      if (instance === undefined || instance === null) return instance;
+
       return SC.get(instance, 'data');
     };
     value.deserialize = value.deserialize || function(data) {
+      if (data === undefined || data === null) return data;
+
       if (isString(value.type)) {
         value.type = SC.getPath(value.type);
       }
@@ -115,9 +119,12 @@
     }
 
     value.serialize = value.serialize || function(instance) {
+      if (instance === undefined || instance === null) return instance;
       return SC.get(instance, 'id');
     };
     value.deserialize = value.deserialize || function(id) {
+      if (id === undefined || id === null) return id;
+
       if (isString(value.type)) {
         value.type = SC.getPath(value.type);
       }
