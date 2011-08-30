@@ -197,44 +197,47 @@
     return schema;
   }
 
-  // Build and return the function for a given regular property.
+  // the function for a given regular property
+  var propertyFunction = function(name, value) {
+    var propertyOptions = this.constructor.schema[name];
+    var data = SC.get(this, 'data');
+
+    if (arguments.length === 1) { // getter
+      if (!data || !data.hasOwnProperty(propertyOptions.key)) {
+        this.fetch();
+        return;
+      } else {
+        value = propertyOptions.deserialize(SC.getPath(data, propertyOptions.key));
+      }
+    } else { // setter
+      SC.setPath(data, propertyOptions.key, propertyOptions.serialize(value));
+    }
+
+    return value;
+  };
+
+  // Build a cumputed property function for a regular property.
   function createPropertyFunction(propertyOptions) {
-    return function(name, value) {
-      var data = SC.get(this, 'data');
-
-      if (arguments.length === 1) { // getter
-        if (!data || !data.hasOwnProperty(propertyOptions.key)) {
-          this.fetch();
-          return;
-        } else {
-          value = propertyOptions.deserialize(SC.getPath(data, propertyOptions.key));
-        }
-      } else { // setter
-        SC.setPath(data, propertyOptions.key, propertyOptions.serialize(value));
-      }
-
-      return value;
-    }.property('data').cacheable();
+    return propertyFunction.property('data.' + propertyOptions.key).cacheable();
   }
 
-  // Build and return the function for a given HasMany property.
-  function createHasManyFunction(propertyOptions) {
-    return function(name, value) {
-      if (arguments.length === 1) { // getter
-        var options = SC.copy(propertyOptions);
-
-        if ($.isFunction(options.url)) {
-          options.url = options.url(this);
-        } else if ('string' === typeof options.url) {
-          options.url = options.url.fmt(SC.get(this, 'id'));
-        }
-
-        return propertyOptions.deserialize(options);
-      } else { // setter
-        // throw "You can not set this property";
+  // The computed property function for a url based has-many association
+   var hasManyFunction = function(name, value) {
+    if (arguments.length === 1) { // getter
+      var propertyOptions = this.constructor.schema[name];
+      var options = SC.copy(propertyOptions);
+  
+      if ($.isFunction(options.url)) {
+        options.url = options.url(this);
+      } else if ('string' === typeof options.url) {
+        options.url = options.url.fmt(SC.get(this, 'id'));
       }
-    }.property('id').cacheable();
-  }
+  
+      return propertyOptions.deserialize(options);
+    } else { // setter
+      // throw "You can not set this property";
+    }
+  }.property('id').cacheable();
 
   function createSchemaProperties(schema) {
     var properties = {}, propertyOptions;
@@ -243,7 +246,7 @@
       if (schema.hasOwnProperty(propertyName)) {
         propertyOptions = schema[propertyName];
         properties[propertyName] = propertyOptions.key ? createPropertyFunction(propertyOptions)
-                                                       : createHasManyFunction(propertyOptions);
+                                                       : hasManyFunction;
       }
     }
 
