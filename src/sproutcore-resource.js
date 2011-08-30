@@ -91,72 +91,93 @@
 
   SC.Resource.reopenClass(SC.Resource.Lifecycle);
 
-  function expandSchemaItem(schema, name) {
+  function expandNestedHasOneSchemaItem(name, schema) {
+    value = schema[name];
+    value.key = value.key || name;
+
+    value.serialize = value.serialize || function(instance) {
+      return SC.get(instance, 'data');
+    };
+    value.deserialize = value.deserialize || function(data) {
+      if (isString(value.type)) {
+        value.type = SC.getPath(value.type);
+      }
+      return value.type.create(data);
+    };
+  }
+
+  function expandRemoteHasOneSchemaItem(name, schema) {
+    value = schema[name];
+    value.key = value.key || name + '_id';
+    if (!schema[value.key]) {
+      schema[value.key] = Number;
+      expandSchemaItem(value.key, schema);
+    }
+
+    value.serialize = value.serialize || function(instance) {
+      return SC.get(instance, 'id');
+    };
+    value.deserialize = value.deserialize || function(id) {
+      if (isString(value.type)) {
+        value.type = SC.getPath(value.type);
+      }
+      return value.type.create({id: id});
+    };
+  }
+
+  function expandRemoteHasManySchemaItem(name, schema) {
+    value = schema[name];
+    value.deserialize = value.deserialize || function(options) {
+      if (isString(value.itemType)) {
+        value.itemType = SC.getPath(value.itemType);
+      }
+      options.type = value.itemType;
+
+      return value.type.create(options);
+    };
+  }
+
+  function expandNestedHasManySchemaItem(name, schema) {
+    value = schema[name];
+    value.key = value.key || name;
+    value.deserialize = value.deserialize || function(data) {
+      if (isString(value.itemType)) {
+        value.itemType = SC.getPath(value.itemType);
+      }
+      return value.type.create({
+        content: data,
+        type: value.itemType,
+        parse: value.parse
+      });
+    };
+  }
+
+  function expandSchemaItem(name, schema) {
     var value = schema[name];
 
     if (value === Number || value === String || value === Boolean || value === Date || value === Object) {
       value = {type: value};
+      schema[name] = value;
     }
 
     if (isObject(value) && value.type) {
 
-      if (value.type.isSCResource || isString(value.type)) {
+      if (value.type.isSCResource || isString(value.type)) { // a has-one association
         value.nested = !!value.nested;
 
         if (value.nested) {
-          value.key = value.key || name;
-
-          value.serialize = value.serialize || function(instance) {
-            return SC.get(instance, 'data');
-          };
-          value.deserialize = value.deserialize || function(data) {
-            if (isString(value.type)) {
-              value.type = SC.getPath(value.type);
-            }
-            return value.type.create(data);
-          };
+          expandNestedHasOneSchemaItem(name, schema);
         } else {
-          value.key = value.key || name + '_id';
-          if (!schema[value.key]) {
-            schema[value.key] = Number;
-            expandSchemaItem(schema, value.key);
-          }
-
-          value.serialize = value.serialize || function(instance) {
-            return SC.get(instance, 'id');
-          };
-          value.deserialize = value.deserialize || function(id) {
-            if (isString(value.type)) {
-              value.type = SC.getPath(value.type);
-            }
-            return value.type.create({id: id});
-          };
+          expandRemoteHasOneSchemaItem(name, schema);
         }
 
-      } else if(value.type.isSCResourceCollection) {
+      } else if(value.type.isSCResourceCollection) { // a has-many association
         if (value.url) {
-          value.deserialize = value.deserialize || function(options) {
-            if (isString(value.itemType)) {
-              value.itemType = SC.getPath(value.itemType);
-            }
-            options.type = value.itemType;
-
-            return value.type.create(options);
-          };
+          expandRemoteHasManySchemaItem(name, schema);
         } else if (value.nested) {
-          value.key = value.key || name;
-          value.deserialize = value.deserialize || function(data) {
-            if (isString(value.itemType)) {
-              value.itemType = SC.getPath(value.itemType);
-            }
-            return value.type.create({
-              content: data,
-              type: value.itemType,
-              parse: value.parse
-            });
-          };
+          expandNestedHasManySchemaItem(name, schema);
         }
-      } else {
+      } else { // a regular attribute
         value.key = value.key || name;
       }
 
@@ -184,13 +205,12 @@
         value.deserialize = value.deserialize || serializer;
       }
     }
-    schema[name] = value;
   }
 
   function expandSchema(schema) {
     for (var name in schema) {
       if (schema.hasOwnProperty(name)) {
-        expandSchemaItem(schema, name);
+        expandSchemaItem(name, schema);
       }
     }
 
