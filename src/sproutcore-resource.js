@@ -7,9 +7,7 @@
     return obj === Object(obj);
   }
 
-  var isFunction = $.isFunction,
-      get = SC.get,
-      set = SC.set;
+  var isFunction = $.isFunction;
 
   function getJSON(url, callback) {
     var options = {
@@ -29,16 +27,16 @@
     isSCResource: true,
 
     fetch: function() {
-      set.call(this, 'resourceState', SC.Resource.Lifecycle.FETCHING);
+      SC.set(this, 'resourceState', SC.Resource.Lifecycle.FETCHING);
 
       var self = this;
 
       this.deferedFetch = getJSON(this.resourceURL(), function(json) {
-        set.call(self, 'data', self.constructor.parse(json));
+        SC.set(self, 'data', self.constructor.parse(json));
       });
 
       this.deferedFetch.always(function() {
-        set.call(self, 'resourceState', SC.Resource.Lifecycle.FETCHED);
+        SC.set(self, 'resourceState', SC.Resource.Lifecycle.FETCHED);
       });
 
       return this.deferedFetch;
@@ -51,11 +49,11 @@
     // Turn this resource into a JSON object to be saved via AJAX. Override
     // this method to produce different syncing behavior.
     toJSON: function() {
-      return get.call(this, 'data');
+      return SC.get(this, 'data');
     },
 
     isNew: function() {
-      return !get.call(this, 'id');
+      return !SC.get(this, 'id');
     },
 
     save: function() {
@@ -84,8 +82,8 @@
       options = options || {};
       options.resourceState = SC.Resource.Lifecycle.INITIALIZING;
       var instance = this._super.call(this, options);
-      if (get.call(instance, 'resourceState') === SC.Resource.Lifecycle.INITIALIZING) {
-        set.call(instance, 'resourceState', SC.Resource.Lifecycle.UNFETCHED);
+      if (SC.get(instance, 'resourceState') === SC.Resource.Lifecycle.INITIALIZING) {
+        SC.set(instance, 'resourceState', SC.Resource.Lifecycle.UNFETCHED);
       }
       return instance;
     }
@@ -109,7 +107,7 @@
           value.key = value.key || name;
 
           value.serialize = value.serialize || function(instance) {
-            return instance.get('data');
+            return SC.get(instance, 'data');
           };
           value.deserialize = value.deserialize || function(data) {
             if (isString(value.type)) {
@@ -125,7 +123,7 @@
           }
 
           value.serialize = value.serialize || function(instance) {
-            return get.call(instance, 'id');
+            return SC.get(instance, 'id');
           };
           value.deserialize = value.deserialize || function(id) {
             if (isString(value.type)) {
@@ -202,7 +200,7 @@
   // Build and return the function for a given regular property.
   function createPropertyFunction(propertyOptions) {
     return function(name, value) {
-      var data = this.get('data');
+      var data = SC.get(this, 'data');
 
       if (arguments.length === 1) { // getter
         if (!data || !data.hasOwnProperty(propertyOptions.key)) {
@@ -228,7 +226,7 @@
         if ($.isFunction(options.url)) {
           options.url = options.url(this);
         } else if ('string' === typeof options.url) {
-          options.url = options.url.fmt(this.get('id'));
+          options.url = options.url.fmt(SC.get(this, 'id'));
         }
 
         return propertyOptions.deserialize(options);
@@ -266,11 +264,11 @@
         instance = this.identityMap[id];
         if (!instance) {
           this.identityMap[id] = instance = this._super.call(this);
-          instance.set('data', options);
+          SC.set(instance, 'data', options);
         }
       } else {
         instance = this._super.call(this);
-        instance.set('data', options);
+        SC.set(instance, 'data', options);
       }
       return instance;
     },
@@ -319,7 +317,7 @@
         return this.url(instance);
       } else {
         if (instance) {
-          return this.url + '/' + get.call(instance, 'id');
+          return this.url + '/' + SC.get(instance, 'id');
         } else {
           return this.url;
         }
@@ -331,16 +329,16 @@
     isSCResourceCollection: true,
     type: SC.Required,
     fetch: function() {
-      if (!this.prePopulated && get.call(this, 'resourceState') === SC.Resource.Lifecycle.UNFETCHED) {
-        set.call(this, 'resourceState', SC.Resource.Lifecycle.FETCHING);
+      if (!this.prePopulated && SC.get(this, 'resourceState') === SC.Resource.Lifecycle.UNFETCHED) {
+        SC.set(this, 'resourceState', SC.Resource.Lifecycle.FETCHING);
         var self = this;
 
         this.deferedFetch = this._fetch(function(json) {
-          set.call(self, 'content', self.instantiateItems(self.parse(json)));
+          SC.set(self, 'content', self.instantiateItems(self.parse(json)));
         });
 
         this.deferedFetch.always(function() {
-          set.call(self, 'resourceState', SC.Resource.Lifecycle.FETCHED);
+          SC.set(self, 'resourceState', SC.Resource.Lifecycle.FETCHED);
         });
       }
       return this.deferedFetch;
@@ -385,7 +383,7 @@
       var instance = this._super.call(this, options);
 
       if (content) {
-        instance.set('content', content);
+        SC.set(instance, 'content', content);
       }
 
       return instance;
