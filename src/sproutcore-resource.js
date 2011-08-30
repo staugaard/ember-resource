@@ -92,7 +92,7 @@
   SC.Resource.reopenClass(SC.Resource.Lifecycle);
 
   function expandNestedHasOneSchemaItem(name, schema) {
-    value = schema[name];
+    var value = schema[name];
     value.key = value.key || name;
 
     value.serialize = value.serialize || function(instance) {
@@ -107,7 +107,7 @@
   }
 
   function expandRemoteHasOneSchemaItem(name, schema) {
-    value = schema[name];
+    var value = schema[name];
     value.key = value.key || name + '_id';
     if (!schema[value.key]) {
       schema[value.key] = Number;
@@ -126,7 +126,7 @@
   }
 
   function expandRemoteHasManySchemaItem(name, schema) {
-    value = schema[name];
+    var value = schema[name];
     value.deserialize = value.deserialize || function(options) {
       if (isString(value.itemType)) {
         value.itemType = SC.getPath(value.itemType);
@@ -138,7 +138,7 @@
   }
 
   function expandNestedHasManySchemaItem(name, schema) {
-    value = schema[name];
+    var value = schema[name];
     value.key = value.key || name;
     value.deserialize = value.deserialize || function(data) {
       if (isString(value.itemType)) {
