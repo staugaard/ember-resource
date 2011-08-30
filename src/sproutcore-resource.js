@@ -399,12 +399,10 @@
     content: function(name, value) {
       if (arguments.length === 1) { // getter
         SC.run.next(this, this.fetch);
-        return this.realContent;
       } else { // setter
-        this.realContent = this.instantiateItems(value);
-        return value;
+        return this.instantiateItems(value);
       }
-    }.property()
+    }.property().cacheable()
   });
 
   SC.ResourceCollection.reopenClass(SC.Resource.Lifecycle);
