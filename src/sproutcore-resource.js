@@ -220,7 +220,7 @@
   // Build and return the function for a given HasMany property.
   function createHasManyFunction(propertyOptions) {
     return function(name, value) {
-      if (value === void(0)) {
+      if (arguments.length === 1) { // getter
         var options = SC.copy(propertyOptions);
 
         if ($.isFunction(options.url)) {
@@ -230,7 +230,7 @@
         }
 
         return propertyOptions.deserialize(options);
-      } else {
+      } else { // setter
         // throw "You can not set this property";
       }
     }.property('id').cacheable();
@@ -359,10 +359,10 @@
       return _.map(json, this.type.parse);
     },
     content: function(name, value) {
-      if (value === void(0)) {
+      if (arguments.length === 1) { // getter
         this.fetch();
         return this.realContent;
-      } else {
+      } else { // setter
         this.realContent = this.instantiateItems(value);
         return value;
       }
