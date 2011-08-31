@@ -424,10 +424,21 @@
 
       options.prePopulated = !! content;
 
-      var instance = this._super.call(this, options);
+      var instance;
 
-      if (content) {
-        SC.set(instance, 'content', content);
+      if (!options.prePopulated && options.url) {
+        this.identityMap = this.identityMap || {};
+        var identity = [options.type, options.url];
+        instance = this.identityMap[identity] || this._super.call(this, options)
+        this.identityMap[identity] = instance;
+      }
+
+      if (!instance) {
+        instance = this._super.call(this, options);
+
+        if (content) {
+          SC.set(instance, 'content', content);
+        }
       }
 
       return instance;
