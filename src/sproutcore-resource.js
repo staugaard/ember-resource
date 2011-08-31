@@ -100,6 +100,13 @@
 
   SC.Resource.reopenClass(SC.Resource.Lifecycle);
 
+  var resolveType = function(options, key) {
+    key = key || 'type';
+    if (isString(options[key])) {
+      options[key] = SC.getPath(options[key]);
+    }
+  };
+
   expandNestedHasOneSchemaItem = function(name, schema) {
     var value = schema[name];
     value.path = value.path || name;
@@ -112,9 +119,8 @@
     value.deserialize = value.deserialize || function(data) {
       if (data === undefined || data === null) return data;
 
-      if (isString(value.type)) {
-        value.type = SC.getPath(value.type);
-      }
+      resolveType(value);
+
       return value.type.create(data);
     };
   };
@@ -134,9 +140,8 @@
     value.deserialize = value.deserialize || function(id) {
       if (id === undefined || id === null) return id;
 
-      if (isString(value.type)) {
-        value.type = SC.getPath(value.type);
-      }
+      resolveType(value);
+
       return value.type.create({id: id});
     };
   };
@@ -144,9 +149,8 @@
   expandRemoteHasManySchemaItem = function(name, schema) {
     var value = schema[name];
     value.deserialize = value.deserialize || function(options) {
-      if (isString(value.itemType)) {
-        value.itemType = SC.getPath(value.itemType);
-      }
+      resolveType(value, 'itemType');
+
       options.type = value.itemType;
 
       return value.type.create(options);
@@ -157,9 +161,8 @@
     var value = schema[name];
     value.path = value.path || name;
     value.deserialize = value.deserialize || function(data) {
-      if (isString(value.itemType)) {
-        value.itemType = SC.getPath(value.itemType);
-      }
+      resolveType(value, 'itemType');
+
       return value.type.create({
         content: data,
         type: value.itemType,
