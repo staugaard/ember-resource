@@ -32,12 +32,16 @@
     isSCResource: true,
 
     fetch: function() {
+      var url = this.resourceURL();
+
+      if (!url) return;
+
       SC.set(this, 'resourceState', SC.Resource.Lifecycle.FETCHING);
 
       var self = this;
 
-      this.deferedFetch = getJSON(this.resourceURL(), function(json) {
-        SC.set(self, 'data', self.constructor.parse(json));
+      this.deferedFetch = this.deferedFetch || getJSON(url, function(json) {
+        self.setProperties(self.constructor.parse(json))
       });
 
       this.deferedFetch.always(function() {
@@ -259,13 +263,16 @@
   // The computed property function for a url based has-many association
   hasManyFunction = function(name, value) {
     if (arguments.length === 1) { // getter
+      var id = this.get('id');
+      if (!id) return undefined;
+
       var propertyOptions = this.constructor.schema[name];
       var options = SC.copy(propertyOptions);
 
       if ($.isFunction(options.url)) {
         options.url = options.url(this);
       } else if ('string' === typeof options.url) {
-        options.url = options.url.fmt(SC.get(this, 'id'));
+        options.url = options.url.fmt(id);
       }
 
       return propertyOptions.deserialize(options);
