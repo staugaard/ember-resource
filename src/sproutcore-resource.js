@@ -114,8 +114,15 @@
     value.serialize = value.serialize || function(instance) {
       if (instance === undefined || instance === null) return instance;
 
-      return SC.get(instance, 'data');
+      resolveType(value);
+
+      if (instance instanceof value.type) {
+        return SC.get(instance, 'data');
+      } else if (isObject(instance)) {
+        return instance
+      }
     };
+    
     value.deserialize = value.deserialize || function(data) {
       if (data === undefined || data === null) return data;
 
@@ -135,8 +142,12 @@
 
     value.serialize = value.serialize || function(instance) {
       if (instance === undefined || instance === null) return instance;
+
+      resolveType(value);
+
       return SC.get(instance, 'id');
     };
+    
     value.deserialize = value.deserialize || function(id) {
       if (id === undefined || id === null) return id;
 
@@ -148,6 +159,7 @@
 
   expandRemoteHasManySchemaItem = function(name, schema) {
     var value = schema[name];
+
     value.deserialize = value.deserialize || function(options) {
       resolveType(value, 'itemType');
 
@@ -160,6 +172,32 @@
   expandNestedHasManySchemaItem = function(name, schema) {
     var value = schema[name];
     value.path = value.path || name;
+
+    value.serialize = value.serialize || function(instance) {
+      if (instance === undefined || instance === null) return instance;
+
+      resolveType(value, 'itemType');
+
+      var array;
+      if (instance instanceof SC.ResourceCollection) {
+        array = instance.get('content');
+      } else if (instance instanceof Array) {
+        array = instance;
+      }
+
+      if (array) {
+        return array.map(function(item) {
+          if (item instanceof value.itemType) {
+            return item.get('data');
+          } else if (isObject(item)) {
+            return item;
+          } else {
+            throw 'invalid item in collection';
+          }
+        });
+      }
+    };
+
     value.deserialize = value.deserialize || function(data) {
       resolveType(value, 'itemType');
 
@@ -251,9 +289,11 @@
 
       value = propertyOptions.deserialize(serializedValue);
     } else { // setter
-      SC.setPath(data, propertyOptions.path, propertyOptions.serialize(value));
+      var serialized = propertyOptions.serialize(value);
+
+      SC.setPath(data, propertyOptions.path, serialized);
       
-      value = SC.get(this, name);
+      value = propertyOptions.deserialize(serialized);
     }
 
     return value;
