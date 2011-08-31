@@ -244,12 +244,13 @@
 
       if (serializedValue === undefined) {
         SC.run.next(this, this.fetch);
-        return;
-      } else {
-        value = propertyOptions.deserialize(serializedValue);
       }
+
+      value = propertyOptions.deserialize(serializedValue);
     } else { // setter
       SC.setPath(data, propertyOptions.path, propertyOptions.serialize(value));
+      
+      value = SC.get(this, name);
     }
 
     return value;
@@ -279,7 +280,7 @@
     } else { // setter
       // throw "You can not set this property";
     }
-  }.property('id').cacheable();
+  }.property('data.id').cacheable();
 
   createSchemaProperties = function(schema) {
     var properties = {}, propertyOptions;
