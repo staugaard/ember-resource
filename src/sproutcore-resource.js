@@ -14,21 +14,20 @@
 
   var isFunction = $.isFunction;
 
-  function getJSON(url, callback) {
-    var options = {
-      url: url,
-      dataType: 'json',
-      success: callback
-    };
+  SC.Resource = SC.Object.extend({});
 
-    if (SC.Resource.errorHandler) {
+  SC.Resource.ajax = function(options) {
+    options.dataType = options.dataType || 'json';
+    options.type     = options.type     || 'GET'
+
+    if (!options.error && SC.Resource.errorHandler) {
       options.error = SC.Resource.errorHandler;
     }
 
     return $.ajax(options);
-  }
+  };
 
-  SC.Resource = SC.Object.extend({
+  SC.Resource.reopen({
     isSCResource: true,
 
     fetch: function() {
@@ -40,8 +39,13 @@
 
       var self = this;
 
-      this.deferedFetch = this.deferedFetch || getJSON(url, function(json) {
-        self.setProperties(self.constructor.parse(json))
+      if (this.deferedFetch) return this.deferedFetch;
+
+      this.deferedFetch = SC.Resource.ajax({
+        url: url,
+        success: function(json) {
+          self.setProperties(self.constructor.parse(json))
+        }
       });
 
       this.deferedFetch.always(function() {
@@ -78,7 +82,7 @@
         ajaxOptions.url = this.resourceURL();
       }
 
-      return $.ajax(ajaxOptions);
+      return SC.Resource.ajax(ajaxOptions);
     }
   });
 
@@ -122,7 +126,7 @@
         return instance
       }
     };
-    
+
     value.deserialize = value.deserialize || function(data) {
       if (data === undefined || data === null) return data;
 
@@ -147,7 +151,7 @@
 
       return SC.get(instance, 'id');
     };
-    
+
     value.deserialize = value.deserialize || function(id) {
       if (id === undefined || id === null) return id;
 
@@ -295,7 +299,7 @@
       var serialized = propertyOptions.serialize(value);
 
       SC.setPath(data, propertyOptions.path, serialized);
-      
+
       value = propertyOptions.deserialize(serialized);
     }
 
@@ -436,7 +440,10 @@
       return this.deferedFetch;
     },
     _fetch: function(callback) {
-      return getJSON(this.url || this.type.resourceURL(), callback);
+      return SC.Resource.ajax({
+        url: this.url || this.type.resourceURL(),
+        success: callback
+      });
     },
     instantiateItems: function(items) {
       return items.map(function(item) {
