@@ -152,7 +152,7 @@ describe('schema definition', function() {
 
   it('should create Date properties', function() {
     var date = new Date();
-    var dateString = JSON.stringify(date).slice(1, -1);
+    var dateString = date.toJSON();
     
     var Model = SC.Resource.define({
       schema: {
@@ -167,13 +167,13 @@ describe('schema definition', function() {
     expect(instance.get('updatedAt')).toEqual(date);
 
     var date = new Date();
-    var dateString = JSON.stringify(date).slice(1, -1);
+    var dateString = date.toJSON();
 
     instance.set('createdAt', date);
-    expect(data.createdAt).toEqual(date, "convert a Date instante to a Date instance");
+    expect(data.createdAt).toEqual(dateString, "convert a Date instance to a string");
     
     instance.set('updatedAt', dateString);
-    expect(data.updatedAt).toEqual(date, 'convert a string ("' + dateString + '") to a Date instance');
+    expect(data.updatedAt).toEqual(dateString, 'convert a string ("' + dateString + '") to a string');
   });
 
   it('should create Boolean properties', function() {

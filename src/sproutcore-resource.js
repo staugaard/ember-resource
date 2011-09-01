@@ -238,28 +238,31 @@
         value.path = value.path || name;
       }
 
-      var serializer;
+      var serialize, deserialize;
       switch (value.type) {
         case Number:
-          serializer = function(v) { return v === undefined ? undefined : ( v === null ? null : Number(v) ); };
+          serialize = deserialize = function(v) { return v === undefined ? undefined : ( v === null ? null : Number(v) ); };
           break;
         case String:
-          serializer = function(v) { return v === undefined ? undefined : ( v === null ? null : '' + v ); };
+          serialize = deserialize = function(v) { return v === undefined ? undefined : ( v === null ? null : '' + v ); };
           break;
         case Boolean:
-          serializer = function(v) { return v === true || v === 'true'; };
+          serialize = deserialize = function(v) { return v === true || v === 'true'; };
           break;
         case Date:
-          serializer = function(v) { return v === undefined ? undefined : ( v === null ? null : new Date(v) ); };
+          serialize = function(v) { return v === undefined ? undefined : ( v === null ? null : (new Date(v)).toJSON() ); };
+          deserialize = function(v) { return v === undefined ? undefined : ( v === null ? null : new Date(v) ); };
           break;
         case Object:
-          serializer = function(v) { return v; };
+          serialize = deserialize = function(v) { return v; };
           break;
       }
 
-      if (serializer) {
-        value.serialize   = value.serialize   || serializer;
-        value.deserialize = value.deserialize || serializer;
+      if (serialize) {
+        value.serialize   = value.serialize   || serialize;
+      }
+      if (deserialize) {
+        value.deserialize = value.deserialize || deserialize;
       }
     }
   };
