@@ -254,6 +254,7 @@
           serialize = deserialize = function(v) { return v === true || v === 'true'; };
           break;
         case Date:
+          // TODO: We need to investigate how well Date#toJSON is supported in browsers
           serialize = function(v) { return v === undefined ? undefined : ( v === null ? null : (new Date(v)).toJSON() ); };
           deserialize = function(v) { return v === undefined ? undefined : ( v === null ? null : new Date(v) ); };
           break;
