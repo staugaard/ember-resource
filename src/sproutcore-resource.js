@@ -62,7 +62,7 @@
     // Turn this resource into a JSON object to be saved via AJAX. Override
     // this method to produce different syncing behavior.
     toJSON: function() {
-      return SC.get(this, 'data');
+      return SC.copy(SC.get(this, 'data'));
     },
 
     isNew: function() {
