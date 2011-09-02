@@ -455,7 +455,7 @@
       }, this);
     },
     parse: function(json) {
-      return _.map(json, this.type.parse);
+      return json.map(this.type.parse);
     },
     content: function(name, value) {
       if (arguments.length === 1) { // getter
