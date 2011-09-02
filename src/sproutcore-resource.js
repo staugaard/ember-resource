@@ -455,7 +455,12 @@
       }, this);
     },
     parse: function(json) {
-      return _.map(json, this.type.parse);
+      if (this.type.parse && typeof this.type.parse === 'function') {
+        return json.map(this.type.parse);
+      }
+      else {
+        return json;
+      }
     },
     content: function(name, value) {
       if (arguments.length === 1) { // getter
