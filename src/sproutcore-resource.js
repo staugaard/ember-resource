@@ -2,7 +2,8 @@
   var expandSchema, expandSchemaItem, propertyFunction,
       createPropertyFunction, hasManyFunction, createSchemaProperties,
       expandRemoteHasOneSchemaItem, expandRemoteHasManySchemaItem,
-      expandNestedHasOneSchemaItem, expandNestedHasManySchemaItem;
+      expandNestedHasOneSchemaItem, expandNestedHasManySchemaItem,
+      mergeSchemas;
 
   function isString(obj) {
     return !!(obj === '' || (obj && obj.charCodeAt && obj.substr));
@@ -282,6 +283,22 @@
     return schema;
   };
 
+  mergeSchemas = function(childSchema, parentSchema) {
+    var schema = SC.copy(parentSchema || {});
+
+    for (var name in childSchema) {
+      if (childSchema.hasOwnProperty(name)) {
+        if (schema.hasOwnProperty(name)) {
+          throw("Schema item '" + name + "' is already defined");
+        }
+
+        schema[name] = childSchema[name];
+      }
+    }
+
+    return schema;
+  };
+
   // the function for a given regular property
   propertyFunction = function(name, value) {
     var propertyOptions = this.constructor.schema[name];
@@ -349,6 +366,7 @@
 
   SC.Resource.reopenClass({
     isSCResource: true,
+    schema: {},
 
     // Create an instance of this resource. If `options` includes an
     // `id`, first check the identity map and return the existing resource
@@ -392,13 +410,17 @@
     define: function(options) {
       options = options || {};
       var schema = expandSchema(options.schema);
+      schema = mergeSchemas(schema, this.schema);
 
       var klass = this.extend(createSchemaProperties(schema));
 
       var classOptions = {
-        url: options.url,
         schema: schema
       };
+
+      if (options.url) {
+        classOptions.url = options.url;
+      }
 
       if (options.parse) {
         classOptions.parse = options.parse;
