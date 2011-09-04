@@ -1,3 +1,15 @@
+# SproutCore-Resource
+
+A simple library to connect your SproutCore 2.0 application to JSON backends.
+
+## The Mandatory Todo Appplication
+
+I've created a modified version of the todo application that the SproutCore 2.0 Tutorial walks you through.
+https://github.com/staugaard/sproutcore-resource-todos
+This version persists the todo items on the server using a very small sinatra application and MongoDB.
+
+## Examples
+
 We will provide you with some documentation and stuff, but for now here's a little inspiration:
 
 Think about running Wordpress.org. This is the schema you would use:
