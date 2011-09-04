@@ -6,7 +6,7 @@
       mergeSchemas;
 
   function isString(obj) {
-    return !!(obj === '' || (obj && obj.charCodeAt && obj.substr));
+    return !!(obj === '' || (obj && obj !== String && obj.charCodeAt && obj.substr));
   }
 
   function isObject(obj) {
