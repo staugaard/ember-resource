@@ -16,7 +16,7 @@ Think about running Wordpress.org. This is the schema you would use:
 
 Assuming that /users/1 returns this JSON:
 
-```JavaScript
+```javascript
 {
   id:   1,
   name: "Mick Staugaard"
@@ -25,7 +25,7 @@ Assuming that /users/1 returns this JSON:
 
 You would use this user model:
 
-```JavaScript
+```javascript
 MyApp.User = SC.Resource.define({
   url: '/users',
   schema: {
@@ -42,7 +42,7 @@ MyApp.User = SC.Resource.define({
 
 Assuming that /blogs/1 returns this JSON:
 
-```JavaScript
+```javascript
 {
   id:      1,
   name:    "My awesome blog",
@@ -52,7 +52,7 @@ Assuming that /blogs/1 returns this JSON:
 
 You would use this blog model:
 
-```JavaScript
+```javascript
 MyApp.Blog = SC.Resource.define({
   url: '/blogs'
   schema: {
@@ -72,7 +72,7 @@ MyApp.Blog = SC.Resource.define({
 
 Assuming that /posts/1 returns this JSON:
 
-```JavaScript
+```javascript
 {
   id:      1,
   title:   "Welcome to the blog",
@@ -83,7 +83,7 @@ Assuming that /posts/1 returns this JSON:
 
 You would use this post model:
 
-```JavaScript
+```javascript
 MyApp.Post = SC.Resource.define({
   url: '/posts',
   schema: {
@@ -104,7 +104,7 @@ MyApp.Post = SC.Resource.define({
 
 Assuming that /comments/1 returns this JSON:
 
-```JavaScript
+```javascript
 {
   id:      1,
   body:    "Viagra spam shit",
@@ -118,7 +118,7 @@ Assuming that /comments/1 returns this JSON:
 
 You would use this comment model:
 
-```JavaScript
+```javascript
 MyApp.Comment = SC.Resource.define({
   url: '/comments',
   schema: {
