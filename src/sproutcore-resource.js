@@ -84,6 +84,13 @@
       }
 
       return SC.Resource.ajax(ajaxOptions);
+    },
+
+    destroy: function() {
+      return SC.Resource.ajax({
+        type: 'DELETE',
+        url:  this.resourceURL()
+      });
     }
   });
 
@@ -436,7 +443,10 @@
         return this.url(instance);
       } else {
         if (instance) {
-          return this.url + '/' + SC.get(instance, 'id');
+          var id = SC.get(instance, 'id');
+          if (id) {
+            return this.url + '/' + id;
+          }
         } else {
           return this.url;
         }
