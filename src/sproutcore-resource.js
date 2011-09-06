@@ -375,24 +375,42 @@
     isSCResource: true,
     schema: {},
 
+    baseClass: function() {
+      if (this === SC.Resource) {
+        return null;
+      } else {
+        return this.baseResourceClass || this;
+      }
+    },
+
+    subclassFor: function(attributes) {
+      return this;
+    },
+
     // Create an instance of this resource. If `options` includes an
     // `id`, first check the identity map and return the existing resource
     // with that ID if found.
     create: function(options) {
-      var instance;
-      if (options && options.id) {
-        var id = options.id.toString();
+      var klass = this.subclassFor(options);
+
+      if (klass === this) {
+        var instance;
         this.identityMap = this.identityMap || {};
-        instance = this.identityMap[id];
-        if (!instance) {
-          this.identityMap[id] = instance = this._super.call(this);
+        if (options && options.id) {
+          var id = options.id.toString();
+          instance = this.identityMap[id];
+          if (!instance) {
+            this.identityMap[id] = instance = this._super.call(this);
+            SC.set(instance, 'data', options);
+          }
+        } else {
+          instance = this._super.call(this);
           SC.set(instance, 'data', options);
         }
+        return instance;
       } else {
-        instance = this._super.call(this);
-        SC.set(instance, 'data', options);
+        return klass.create(options);
       }
-      return instance;
     },
 
     // Parse JSON -- likely returned from an AJAX call -- into the
@@ -424,6 +442,10 @@
       var classOptions = {
         schema: schema
       };
+
+      if (this !== SC.Resource) {
+        classOptions.baseResourceClass = this.baseClass() || this;
+      }
 
       if (options.url) {
         classOptions.url = options.url;
