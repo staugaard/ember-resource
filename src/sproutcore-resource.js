@@ -510,7 +510,7 @@
       }, this);
     },
     parse: function(json) {
-      if (this.type.parse && typeof this.type.parse === 'function') {
+      if (isFunction(this.type.parse)) {
         return json.map(this.type.parse);
       }
       else {
