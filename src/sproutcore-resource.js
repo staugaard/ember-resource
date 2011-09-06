@@ -19,7 +19,7 @@
 
   SC.Resource.ajax = function(options) {
     options.dataType = options.dataType || 'json';
-    options.type     = options.type     || 'GET'
+    options.type     = options.type     || 'GET';
 
     if (!options.error && SC.Resource.errorHandler) {
       options.error = SC.Resource.errorHandler;
@@ -45,7 +45,7 @@
       this.deferedFetch = SC.Resource.ajax({
         url: url,
         success: function(json) {
-          self.setProperties(self.constructor.parse(json))
+          self.setProperties(self.constructor.parse(json));
         }
       });
 
@@ -131,7 +131,7 @@
       if (instance instanceof value.type) {
         return SC.get(instance, 'data');
       } else if (isObject(instance)) {
-        return instance
+        return instance;
       }
     };
 
@@ -542,7 +542,7 @@
       if (!options.prePopulated && options.url) {
         this.identityMap = this.identityMap || {};
         var identity = [options.type, options.url];
-        instance = this.identityMap[identity] || this._super.call(this, options)
+        instance = this.identityMap[identity] || this._super.call(this, options);
         this.identityMap[identity] = instance;
       }
 
