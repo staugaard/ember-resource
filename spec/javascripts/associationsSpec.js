@@ -2,7 +2,14 @@ describe('associations', function() {
   var Address = SC.Resource.define({
     schema: {
       street: String,
-      zip:    Number
+      zip:    Number,
+      city:   String
+    },
+
+    parse: function(json) {
+      json.city = json.city_name;
+      delete json.city_name;
+      return json;
     }
   });
 
@@ -168,6 +175,24 @@ describe('associations', function() {
         address.set('street', '3 Other Street');
         expect(address.get('street')).toBe('3 Other Street');
         expect(data.home_addresses[0].street).toBe('3 Other Street');
+      });
+
+      it("should use the class's parse method", function() {
+        var data = {
+          name: 'Joe Doe',
+          home_addresses: [
+            {
+              street: '1 My Street',
+              zip: 12345,
+              city_name: 'Anytown'
+            }
+          ]
+        };
+
+        var person = Person.create(data),
+            address = person.get('home_addresses').objectAt(0);
+        expect(address).toBeTruthy();
+        expect(address.get('city')).toEqual('Anytown');
       });
     });
 

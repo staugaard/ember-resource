@@ -212,11 +212,13 @@
 
     value.deserialize = value.deserialize || function(data) {
       resolveType(value, 'itemType');
+      // A ResourceCollection doesn't parse content on creation, only
+      // when the content is fetched, which doesn't happen here.
+      data = data.map(value.parse || value.itemType.parse);
 
       return value.type.create({
         content: data,
-        type: value.itemType,
-        parse: value.parse
+        type: value.itemType
       });
     };
   };
