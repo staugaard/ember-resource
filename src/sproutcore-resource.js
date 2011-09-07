@@ -3,7 +3,7 @@
       createPropertyFunction, hasManyFunction, createSchemaProperties,
       expandRemoteHasOneSchemaItem, expandRemoteHasManySchemaItem,
       expandNestedHasOneSchemaItem, expandNestedHasManySchemaItem,
-      mergeSchemas;
+      mergeSchemas, expandHasManyInArraySchemaItem;
 
   function isString(obj) {
     return !!(obj === '' || (obj && obj !== String && obj.charCodeAt && obj.substr));
@@ -223,6 +223,49 @@
     };
   };
 
+  expandHasManyInArraySchemaItem = function(name, schema) {
+    var value = schema[name];
+    value.path = value.path || name + '_ids';
+
+    value.serialize = value.serialize || function(instances) {
+      if (instances === undefined || instances === null) return instances;
+
+      resolveType(value, 'itemType');
+
+      var array;
+      if (instances instanceof SC.ResourceCollection) {
+        array = instances.get('content');
+      } else if (instances instanceof Array) {
+        array = instances;
+      }
+
+      if (array) {
+        return array.map(function(item) {
+          if (item instanceof value.itemType) {
+            return item.get('id');
+          } else if (isObject(item)) {
+            return item.id;
+          } else {
+            throw 'invalid item in collection';
+          }
+        });
+      }
+    };
+
+    value.deserialize = value.deserialize || function(data) {
+      if (data === undefined || data === null) return data;
+
+      resolveType(value, 'itemType');
+
+      if (data instanceof value.type) return data;
+
+      return value.type.create({
+        content: data.map(function(id) { return {id: id}; }),
+        type: value.itemType
+      });
+    };
+  };
+
   expandSchemaItem = function(name, schema) {
     var value = schema[name];
 
@@ -247,6 +290,8 @@
           expandRemoteHasManySchemaItem(name, schema);
         } else if (value.nested) {
           expandNestedHasManySchemaItem(name, schema);
+        } else {
+          expandHasManyInArraySchemaItem(name, schema);
         }
       } else { // a regular attribute
         value.path = value.path || name;
