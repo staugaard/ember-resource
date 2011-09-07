@@ -211,6 +211,8 @@
     };
 
     value.deserialize = value.deserialize || function(data) {
+      if (data === undefined || data === null) return data;
+
       resolveType(value, 'itemType');
       // A ResourceCollection doesn't parse content on creation, only
       // when the content is fetched, which doesn't happen here.
