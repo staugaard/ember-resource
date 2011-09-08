@@ -623,7 +623,7 @@
 
   SC.ResourceCollection = SC.ArrayProxy.extend({
     isSCResourceCollection: true,
-    type: SC.Required,
+    type: SC.required(),
     fetch: function() {
       if (!this.get('isFetchable')) return;
 
