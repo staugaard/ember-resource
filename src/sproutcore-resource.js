@@ -154,14 +154,14 @@
 
     isNew: function() {
       return !SC.get(this, 'id');
-    },
+    }.property('id').cacheable(),
 
     save: function() {
       var ajaxOptions = {
         data: this.toJSON()
       };
 
-      if (this.isNew()) {
+      if (this.get('isNew')) {
         ajaxOptions.type = 'POST';
         ajaxOptions.url = this.constructor.resourceURL();
       } else {
