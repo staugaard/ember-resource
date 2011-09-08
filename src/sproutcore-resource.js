@@ -3,7 +3,7 @@
       createPropertyFunction, hasManyFunction, createSchemaProperties,
       expandRemoteHasOneSchemaItem, expandRemoteHasManySchemaItem,
       expandNestedHasOneSchemaItem, expandNestedHasManySchemaItem,
-      mergeSchemas, expandHasManyInArraySchemaItem;
+      mergeSchemas, expandHasManyInArraySchemaItem, createNestedHasOneIdProperty;
 
   function isString(obj) {
     return !!(obj === '' || (obj && obj !== String && obj.charCodeAt && obj.substr));
@@ -481,6 +481,17 @@
     }
   }.property('id').cacheable();
 
+  createNestedHasOneIdProperty = function(propertyName, propertyOptions) {
+    return function(name, value) {
+      if (arguments.length === 1) {
+        value = this.getPath(propertyName + '.id');
+      } else {
+        this.set(propertyName, propertyOptions.type.create({id: value}));
+      }
+      return value;
+    }.property(propertyName);
+  };
+
   createSchemaProperties = function(schema) {
     var properties = {}, propertyOptions;
 
@@ -499,14 +510,7 @@
 
           if (propertyOptions.nested) { // nested has-one
             // in adition to the simple accessor, we also setup a property to get/set the id
-            properties[propertyName + '_id'] = function(name, value) {
-              if (arguments.length === 1) {
-                value = this.getPath(propertyName + '.id');
-              } else {
-                this.set(propertyName, propertyOptions.type.create({id: value}));
-              }
-              return value;
-            }.property(propertyName)
+            properties[propertyName + '_id'] = createNestedHasOneIdProperty(propertyName, propertyOptions);
           }
 
         }
