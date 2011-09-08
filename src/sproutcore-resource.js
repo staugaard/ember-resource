@@ -53,7 +53,7 @@
     prototypeMixin: SC.Mixin.create({
       resourceState: 0,
 
-      init: function(arguments) {
+      init: function() {
         this._super.apply(this, arguments);
 
         var self = this;
