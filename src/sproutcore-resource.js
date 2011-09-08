@@ -31,9 +31,10 @@
   SC.Resource.Lifecycle = {
     INITIALIZING: 0,
     UNFETCHED:    10,
-    EXPIRED:      20,
-    FETCHING:     30,
-    FETCHED:      40,
+    EXPIRING:     20,
+    EXPIRED:      30,
+    FETCHING:     40,
+    FETCHED:      50,
 
     classMixin: SC.Mixin.create({
       expireIn: 60 * 5,
@@ -74,30 +75,48 @@
         });
       },
 
+      isFetchable: function() {
+        var state = this.get('resourceState');
+        return state == SC.Resource.Lifecycle.UNFETCHED || state === SC.Resource.Lifecycle.EXPIRED;
+      }.property('resourceState').cacheable(),
+
       isInitializing: function() {
         return (this.get('resourceState') || SC.Resource.Lifecycle.INITIALIZING) === SC.Resource.Lifecycle.INITIALIZING;
       }.property('resourceState').cacheable(),
 
       expire: function() {
+        this.set('resourceState', SC.Resource.Lifecycle.EXPIRING);
+        SC.run.next(this, function() {
+          this.set('resourceState', SC.Resource.Lifecycle.EXPIRED);
+        });
         this.set('expireAt', new Date());
       },
 
       isExpired: function() {
+        var isExpired = false;
+
         var expireAt = this.get('expireAt');
         if (expireAt) {
-          return expireAt.getTime() <= (new Date()).getTime();
-        } else {
-          return false;
+          isExpired = expireAt.getTime() <= (new Date()).getTime();
         }
+
+        if (isExpired) {
+          this.set('resourceState', SC.Resource.Lifecycle.EXPIRING);
+          SC.run.next(this, function() {
+            this.set('resourceState', SC.Resource.Lifecycle.EXPIRED);
+          });
+        }
+
+        return isExpired;
       }.property('expireAt')
     })
   };
 
-  SC.Resource.reopen(SC.Resource.Lifecycle.prototypeMixin, {
+  SC.Resource.reopen({
     isSCResource: true,
 
     fetch: function() {
-      if (this.get('isInitializing')) return null;
+      if (!this.get('isFetchable')) return null;
 
       var url = this.resourceURL();
 
@@ -159,7 +178,7 @@
         url:  this.resourceURL()
       });
     }
-  });
+  }, SC.Resource.Lifecycle.prototypeMixin);
 
   var resolveType = function(options, key) {
     key = key || 'type';
@@ -171,6 +190,11 @@
   expandNestedHasOneSchemaItem = function(name, schema) {
     var value = schema[name];
     value.path = value.path || name;
+
+    if (!schema[value.path]) {
+      schema[value.path] = Object;
+      expandSchemaItem(value.path, schema);
+    }
 
     value.serialize = value.serialize || function(instance) {
       if (instance === undefined || instance === null) return instance;
@@ -406,8 +430,6 @@
 
   // the function for a given regular property
   propertyFunction = function(name, value) {
-    if (this.get('isInitializing')) return null;
-
     var propertyOptions = this.constructor.schema[name];
     var data = SC.get(this, 'data');
 
@@ -415,7 +437,7 @@
       var serializedValue;
       if (data) serializedValue = SC.getPath(data, propertyOptions.path);
 
-      if (serializedValue === undefined || this.get('isExpired')) {
+      if ((serializedValue === undefined || this.get('isExpired')) && this.get('isFetchable')) {
         SC.run.next(this, this.fetch);
       }
 
@@ -438,9 +460,9 @@
 
   // The computed property function for a url based has-many association
   hasManyFunction = function(name, value) {
-    if (this.get('isInitializing')) return null;
-
     if (arguments.length === 1) { // getter
+      if (this.get('isInitializing')) return null;
+
       var id = this.get('id');
       if (!id) return undefined;
 
@@ -465,15 +487,36 @@
     for (var propertyName in schema) {
       if (schema.hasOwnProperty(propertyName)) {
         propertyOptions = schema[propertyName];
-        properties[propertyName] = propertyOptions.path ? createPropertyFunction(propertyOptions)
-                                                        : hasManyFunction;
+
+        if (propertyOptions.type.isSCResourceCollection) { // has many
+          if (propertyOptions.url) {
+            properties[propertyName] = hasManyFunction;
+          } else {
+            properties[propertyName] = createPropertyFunction(propertyOptions);
+          }
+        } else { // simple attribute or has-one
+          properties[propertyName] = createPropertyFunction(propertyOptions);
+
+          if (propertyOptions.nested) { // nested has-one
+            // in adition to the simple accessor, we also setup a property to get/set the id
+            properties[propertyName + '_id'] = function(name, value) {
+              if (arguments.length === 1) {
+                value = this.getPath(propertyName + '.id');
+              } else {
+                this.set(propertyName, propertyOptions.type.create({id: value}));
+              }
+              return value;
+            }.property(propertyName)
+          }
+
+        }
       }
     }
 
     return properties;
   };
 
-  SC.Resource.reopenClass(SC.Resource.Lifecycle.classMixin, {
+  SC.Resource.reopenClass({
     isSCResource: true,
     schema: {},
 
@@ -576,13 +619,13 @@
         }
       }
     }
-  });
+  }, SC.Resource.Lifecycle.classMixin);
 
-  SC.ResourceCollection = SC.ArrayProxy.extend(SC.Resource.Lifecycle.prototypeMixin, {
+  SC.ResourceCollection = SC.ArrayProxy.extend({
     isSCResourceCollection: true,
     type: SC.Required,
     fetch: function() {
-      if (this.get('isInitializing')) return;
+      if (!this.get('isFetchable')) return;
 
       if (!this.prePopulated) {
         var self = this;
@@ -631,9 +674,9 @@
         return this.instantiateItems(value);
       }
     }.property().cacheable()
-  });
+  }, SC.Resource.Lifecycle.prototypeMixin);
 
-  SC.ResourceCollection.reopenClass(SC.Resource.Lifecycle.classMixin, {
+  SC.ResourceCollection.reopenClass({
     isSCResourceCollection: true,
     create: function(options) {
       options = options || {};
@@ -661,5 +704,5 @@
 
       return instance;
     }
-  });
+  }, SC.Resource.Lifecycle.classMixin);
 }());
