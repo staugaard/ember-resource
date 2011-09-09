@@ -28,28 +28,28 @@ describe('schema definition', function() {
     });
 
     it('should support Number', function() {
-      expect(Model.schema.age.type).toBe(Number);
+      expect(Model.schema.age.type()).toBe(Number);
       expect(Model.schema.age.path).toBe('age');
       expect(Model.schema.age.serialize).toBeDefined();
       expect(Model.schema.age.deserialize).toBeDefined();
     })
 
     it('should support String', function() {
-      expect(Model.schema.name.type).toBe(String);
+      expect(Model.schema.name.type()).toBe(String);
       expect(Model.schema.name.path).toBe('name');
       expect(Model.schema.name.serialize).toBeDefined();
       expect(Model.schema.name.deserialize).toBeDefined();
     })
 
     it('should support Date', function() {
-      expect(Model.schema.birthday.type).toBe(Date);
+      expect(Model.schema.birthday.type()).toBe(Date);
       expect(Model.schema.birthday.path).toBe('birthday');
       expect(Model.schema.birthday.serialize).toBeDefined();
       expect(Model.schema.birthday.deserialize).toBeDefined();
     })
 
     it('should support Boolean', function() {
-      expect(Model.schema.single.type).toBe(Boolean);
+      expect(Model.schema.single.type()).toBe(Boolean);
       expect(Model.schema.single.path).toBe('single');
       expect(Model.schema.single.serialize).toBeDefined();
       expect(Model.schema.single.deserialize).toBeDefined();
@@ -97,12 +97,12 @@ describe('schema definition', function() {
 
     it('should define a Number attribute at the path if not present', function() {
       expect(Model.schema.home_address_id).toBeDefined();
-      expect(Model.schema.home_address_id.type).toBe(Number);
+      expect(Model.schema.home_address_id.type()).toBe(Number);
     });
 
     it('should not override the attribute at the path if present', function() {
       expect(Model.schema.work_addr_id).toBeDefined();
-      expect(Model.schema.work_addr_id.type).toBe(String);
+      expect(Model.schema.work_addr_id.type()).toBe(String);
     });
 
     it('should not create an *_id attribute for nested associations', function() {

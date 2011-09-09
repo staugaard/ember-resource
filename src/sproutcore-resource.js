@@ -1,9 +1,7 @@
 (function(undefined) {
   var expandSchema, expandSchemaItem, propertyFunction,
       createPropertyFunction, hasManyFunction, createSchemaProperties,
-      expandRemoteHasOneSchemaItem, expandRemoteHasManySchemaItem,
-      expandNestedHasOneSchemaItem, expandNestedHasManySchemaItem,
-      mergeSchemas, expandHasManyInArraySchemaItem, createNestedHasOneIdProperty;
+      mergeSchemas, createNestedHasOneIdProperty;
 
   function isString(obj) {
     return !!(obj === '' || (obj && obj !== String && obj.charCodeAt && obj.substr));
@@ -16,6 +14,234 @@
   var isFunction = $.isFunction;
 
   SC.Resource = SC.Object.extend({});
+
+  SC.Resource.SchemaItem = function(name, schema) {
+    var value = schema[name];
+    if (value instanceof SC.Resource.SchemaItem) return value;
+
+    if (value === Number || value === String || value === Boolean || value === Date || value === Object) {
+      this.theType = value;
+    } else if(isObject(value)) {
+      this.theType = value.type;
+    }
+
+    if (this.theType) {
+      if (this.theType.isSCResource || isString(this.theType)) { // a has-one association
+        this.parse = value.parse;
+        this.nested = !!value.nested;
+
+        if (this.nested) {
+          this.expandNestedHasOneSchemaItem(name, schema);
+        } else {
+          this.expandRemoteHasOneSchemaItem(name, schema);
+        }
+
+      } else if(this.theType.isSCResourceCollection) { // a has-many association
+        this.nested = !!value.nested;
+        this.theItemType = value.itemType;
+        this.parse = value.parse;
+
+        if (value.url) {
+          this.url = value.url;
+          this.expandRemoteHasManySchemaItem(name, schema);
+        } else if (this.nested) {
+          this.expandNestedHasManySchemaItem(name, schema);
+        } else {
+          this.expandHasManyInArraySchemaItem(name, schema);
+        }
+      } else { // a regular attribute
+        this.path = value.path || name;
+      }
+
+      var serialize, deserialize;
+      switch (this.theType) {
+        case Number:
+          serialize = deserialize = function(v) { return v === undefined ? undefined : ( v === null ? null : Number(v) ); };
+          break;
+        case String:
+          serialize = deserialize = function(v) { return v === undefined ? undefined : ( v === null ? null : '' + v ); };
+          break;
+        case Boolean:
+          serialize = deserialize = function(v) { return v === true || v === 'true'; };
+          break;
+        case Date:
+          // TODO: We need to investigate how well Date#toJSON is supported in browsers
+          serialize = function(v) { return v === undefined ? undefined : ( v === null ? null : (new Date(v)).toJSON() ); };
+          deserialize = function(v) { return v === undefined ? undefined : ( v === null ? null : new Date(v) ); };
+          break;
+        case Object:
+          serialize = deserialize = function(v) { return v; };
+          break;
+      }
+
+      if (serialize) {
+        this.serialize   = value.serialize   || serialize;
+      }
+      if (deserialize) {
+        this.deserialize = value.deserialize || deserialize;
+      }
+    }
+  };
+
+  SC.Resource.SchemaItem.prototype = {
+    expandNestedHasOneSchemaItem: function(name, schema) {
+      var schemaItem = this;
+      var value = schema[name];
+      this.path = value.path || name;
+
+      if (!schema[this.path]) {
+        schema[this.path] = Object;
+        schema[this.path] = new SC.Resource.SchemaItem(this.path, schema);
+      }
+
+      this.serialize = value.serialize || function(instance) {
+        if (instance === undefined || instance === null) return instance;
+
+        if (instance instanceof schemaItem.type()) {
+          return SC.get(instance, 'data');
+        } else if (isObject(instance)) {
+          return instance;
+        }
+      };
+
+      this.deserialize = value.deserialize || function(data) {
+        if (data === undefined || data === null) return data;
+
+        return schemaItem.type().create(data);
+      };
+    },
+
+    expandRemoteHasOneSchemaItem: function(name, schema) {
+      var schemaItem = this;
+      var value = schema[name];
+      this.path = value.path || name + '_id';
+
+      if (!schema[this.path]) {
+        schema[this.path] = Number;
+        schema[this.path] = new SC.Resource.SchemaItem(this.path, schema);
+      }
+
+      this.serialize = value.serialize || function(instance) {
+        if (instance === undefined || instance === null) return instance;
+
+        return SC.get(instance, 'id');
+      };
+
+      this.deserialize = value.deserialize || function(id) {
+        if (id === undefined || id === null) return id;
+
+        return schemaItem.type().create({id: id});
+      };
+    },
+
+    expandRemoteHasManySchemaItem: function(name, schema) {
+      var schemaItem = this;
+      var value = schema[name];
+
+      this.deserialize = value.deserialize || function(options) {
+        options.type = schemaItem.itemType();
+        return schemaItem.type().create(options);
+      };
+    },
+
+    expandNestedHasManySchemaItem: function(name, schema) {
+      var schemaItem = this;
+      var value = schema[name];
+      this.path = value.path || name;
+
+      this.serialize = value.serialize || function(instance) {
+        if (instance === undefined || instance === null) return instance;
+
+        var array;
+        if (instance instanceof SC.ResourceCollection) {
+          array = instance.get('content');
+        } else if (instance instanceof Array) {
+          array = instance;
+        }
+
+        if (array) {
+          return array.map(function(item) {
+            if (item instanceof schemaItem.itemType()) {
+              return item.get('data');
+            } else if (isObject(item)) {
+              return item;
+            } else {
+              throw 'invalid item in collection';
+            }
+          });
+        }
+      };
+
+      this.deserialize = value.deserialize || function(data) {
+        if (data === undefined || data === null) return data;
+
+        // A ResourceCollection doesn't parse content on creation, only
+        // when the content is fetched, which doesn't happen here.
+        data = data.map(schemaItem.parse || schemaItem.itemType().parse);
+
+        return schemaItem.type().create({
+          content: data,
+          type: schemaItem.itemType()
+        });
+      };
+    },
+
+    expandHasManyInArraySchemaItem: function(name, schema) {
+      var schemaItem = this;
+      var value = schema[name];
+      value.path = value.path || name + '_ids';
+
+      this.serialize = value.serialize || function(instances) {
+        if (instances === undefined || instances === null) return instances;
+
+        var array;
+        if (instances instanceof SC.ResourceCollection) {
+          array = instances.get('content');
+        } else if (instances instanceof Array) {
+          array = instances;
+        }
+
+        if (array) {
+          return array.map(function(item) {
+            if (item instanceof schemaItem.itemType()) {
+              return item.get('id');
+            } else if (isObject(item)) {
+              return item.id;
+            } else {
+              throw 'invalid item in collection';
+            }
+          });
+        }
+      };
+
+      this.deserialize = value.deserialize || function(data) {
+        if (data === undefined || data === null) return data;
+
+        if (data instanceof value.type) return data;
+
+        return schemaItem.type().create({
+          content: data.map(function(id) { return {id: id}; }),
+          type: schemaItem.itemType()
+        });
+      };
+    },
+
+    type: function() {
+      if (isString(this.theType)) {
+        var type = SC.getPath(this.theType);
+        if (type) this.theType = type;
+      }
+      return this.theType;
+    },
+
+    itemType: function() {
+      if (isString(this.theItemType)) {
+        var type = SC.getPath(this.theItemType);
+        if (type) this.theItemType = type;
+      }
+      return this.theItemType;
+    }
+  }
 
   SC.Resource.ajax = function(options) {
     options.dataType = options.dataType || 'json';
@@ -180,232 +406,10 @@
     }
   }, SC.Resource.Lifecycle.prototypeMixin);
 
-  var resolveType = function(options, key) {
-    key = key || 'type';
-    if (isString(options[key])) {
-      options[key] = SC.getPath(options[key]);
-    }
-  };
-
-  expandNestedHasOneSchemaItem = function(name, schema) {
-    var value = schema[name];
-    value.path = value.path || name;
-
-    if (!schema[value.path]) {
-      schema[value.path] = Object;
-      expandSchemaItem(value.path, schema);
-    }
-
-    value.serialize = value.serialize || function(instance) {
-      if (instance === undefined || instance === null) return instance;
-
-      resolveType(value);
-
-      if (instance instanceof value.type) {
-        return SC.get(instance, 'data');
-      } else if (isObject(instance)) {
-        return instance;
-      }
-    };
-
-    value.deserialize = value.deserialize || function(data) {
-      if (data === undefined || data === null) return data;
-
-      resolveType(value);
-
-      return value.type.create(data);
-    };
-  };
-
-  expandRemoteHasOneSchemaItem = function(name, schema) {
-    var value = schema[name];
-    value.path = value.path || name + '_id';
-    if (!schema[value.path]) {
-      schema[value.path] = Number;
-      expandSchemaItem(value.path, schema);
-    }
-
-    value.serialize = value.serialize || function(instance) {
-      if (instance === undefined || instance === null) return instance;
-
-      resolveType(value);
-
-      return SC.get(instance, 'id');
-    };
-
-    value.deserialize = value.deserialize || function(id) {
-      if (id === undefined || id === null) return id;
-
-      resolveType(value);
-
-      return value.type.create({id: id});
-    };
-  };
-
-  expandRemoteHasManySchemaItem = function(name, schema) {
-    var value = schema[name];
-
-    value.deserialize = value.deserialize || function(options) {
-      resolveType(value, 'itemType');
-
-      options.type = value.itemType;
-
-      return value.type.create(options);
-    };
-  };
-
-  expandNestedHasManySchemaItem = function(name, schema) {
-    var value = schema[name];
-    value.path = value.path || name;
-
-    value.serialize = value.serialize || function(instance) {
-      if (instance === undefined || instance === null) return instance;
-
-      resolveType(value, 'itemType');
-
-      var array;
-      if (instance instanceof SC.ResourceCollection) {
-        array = instance.get('content');
-      } else if (instance instanceof Array) {
-        array = instance;
-      }
-
-      if (array) {
-        return array.map(function(item) {
-          if (item instanceof value.itemType) {
-            return item.get('data');
-          } else if (isObject(item)) {
-            return item;
-          } else {
-            throw 'invalid item in collection';
-          }
-        });
-      }
-    };
-
-    value.deserialize = value.deserialize || function(data) {
-      if (data === undefined || data === null) return data;
-
-      resolveType(value, 'itemType');
-      // A ResourceCollection doesn't parse content on creation, only
-      // when the content is fetched, which doesn't happen here.
-      data = data.map(value.parse || value.itemType.parse);
-
-      return value.type.create({
-        content: data,
-        type: value.itemType
-      });
-    };
-  };
-
-  expandHasManyInArraySchemaItem = function(name, schema) {
-    var value = schema[name];
-    value.path = value.path || name + '_ids';
-
-    value.serialize = value.serialize || function(instances) {
-      if (instances === undefined || instances === null) return instances;
-
-      resolveType(value, 'itemType');
-
-      var array;
-      if (instances instanceof SC.ResourceCollection) {
-        array = instances.get('content');
-      } else if (instances instanceof Array) {
-        array = instances;
-      }
-
-      if (array) {
-        return array.map(function(item) {
-          if (item instanceof value.itemType) {
-            return item.get('id');
-          } else if (isObject(item)) {
-            return item.id;
-          } else {
-            throw 'invalid item in collection';
-          }
-        });
-      }
-    };
-
-    value.deserialize = value.deserialize || function(data) {
-      if (data === undefined || data === null) return data;
-
-      resolveType(value, 'itemType');
-
-      if (data instanceof value.type) return data;
-
-      return value.type.create({
-        content: data.map(function(id) { return {id: id}; }),
-        type: value.itemType
-      });
-    };
-  };
-
-  expandSchemaItem = function(name, schema) {
-    var value = schema[name];
-
-    if (value === Number || value === String || value === Boolean || value === Date || value === Object) {
-      value = {type: value};
-      schema[name] = value;
-    }
-
-    if (isObject(value) && value.type) {
-
-      if (value.type.isSCResource || isString(value.type)) { // a has-one association
-        value.nested = !!value.nested;
-
-        if (value.nested) {
-          expandNestedHasOneSchemaItem(name, schema);
-        } else {
-          expandRemoteHasOneSchemaItem(name, schema);
-        }
-
-      } else if(value.type.isSCResourceCollection) { // a has-many association
-        if (value.url) {
-          expandRemoteHasManySchemaItem(name, schema);
-        } else if (value.nested) {
-          expandNestedHasManySchemaItem(name, schema);
-        } else {
-          expandHasManyInArraySchemaItem(name, schema);
-        }
-      } else { // a regular attribute
-        value.path = value.path || name;
-      }
-
-      var serialize, deserialize;
-      switch (value.type) {
-        case Number:
-          serialize = deserialize = function(v) { return v === undefined ? undefined : ( v === null ? null : Number(v) ); };
-          break;
-        case String:
-          serialize = deserialize = function(v) { return v === undefined ? undefined : ( v === null ? null : '' + v ); };
-          break;
-        case Boolean:
-          serialize = deserialize = function(v) { return v === true || v === 'true'; };
-          break;
-        case Date:
-          // TODO: We need to investigate how well Date#toJSON is supported in browsers
-          serialize = function(v) { return v === undefined ? undefined : ( v === null ? null : (new Date(v)).toJSON() ); };
-          deserialize = function(v) { return v === undefined ? undefined : ( v === null ? null : new Date(v) ); };
-          break;
-        case Object:
-          serialize = deserialize = function(v) { return v; };
-          break;
-      }
-
-      if (serialize) {
-        value.serialize   = value.serialize   || serialize;
-      }
-      if (deserialize) {
-        value.deserialize = value.deserialize || deserialize;
-      }
-    }
-  };
-
   expandSchema = function(schema) {
     for (var name in schema) {
       if (schema.hasOwnProperty(name)) {
-        expandSchemaItem(name, schema);
+        schema[name] = new SC.Resource.SchemaItem(name, schema);
       }
     }
 
@@ -430,32 +434,32 @@
 
   // the function for a given regular property
   propertyFunction = function(name, value) {
-    var propertyOptions = this.constructor.schema[name];
+    var schemaItem = this.constructor.schema[name];
     var data = SC.get(this, 'data');
 
     if (arguments.length === 1) { // getter
       var serializedValue;
-      if (data) serializedValue = SC.getPath(data, propertyOptions.path);
+      if (data) serializedValue = SC.getPath(data, schemaItem.path);
 
       if ((serializedValue === undefined || this.get('isExpired')) && this.get('isFetchable')) {
         SC.run.next(this, this.fetch);
       }
 
-      value = propertyOptions.deserialize(serializedValue);
+      value = schemaItem.deserialize(serializedValue);
     } else { // setter
-      var serialized = propertyOptions.serialize(value);
+      var serialized = schemaItem.serialize(value);
 
-      SC.setPath(data, propertyOptions.path, serialized);
+      SC.setPath(data, schemaItem.path, serialized);
 
-      value = propertyOptions.deserialize(serialized);
+      value = schemaItem.deserialize(serialized);
     }
 
     return value;
   };
 
   // Build a cumputed property function for a regular property.
-  createPropertyFunction = function(propertyOptions) {
-    return propertyFunction.property('data.' + propertyOptions.path, 'isExpired').cacheable();
+  createPropertyFunction = function(schemaItem) {
+    return propertyFunction.property('data.' + schemaItem.path, 'isExpired').cacheable();
   };
 
   // The computed property function for a url based has-many association
@@ -466,8 +470,8 @@
       var id = this.get('id');
       if (!id) return undefined;
 
-      var propertyOptions = this.constructor.schema[name];
-      var options = SC.copy(propertyOptions);
+      var schemaItem = this.constructor.schema[name];
+      var options = SC.copy(schemaItem);
 
       if ($.isFunction(options.url)) {
         options.url = options.url(this);
@@ -475,42 +479,42 @@
         options.url = options.url.fmt(id);
       }
 
-      return propertyOptions.deserialize(options);
+      return schemaItem.deserialize(options);
     } else { // setter
       // throw "You can not set this property";
     }
   }.property('id').cacheable();
 
-  createNestedHasOneIdProperty = function(propertyName, propertyOptions) {
+  createNestedHasOneIdProperty = function(propertyName, schemaItem) {
     return function(name, value) {
       if (arguments.length === 1) {
         value = this.getPath(propertyName + '.id');
       } else {
-        this.set(propertyName, propertyOptions.type.create({id: value}));
+        this.set(propertyName, schemaItem.type().create({id: value}));
       }
       return value;
     }.property(propertyName);
   };
 
   createSchemaProperties = function(schema) {
-    var properties = {}, propertyOptions;
+    var properties = {}, schemaItem;
 
     for (var propertyName in schema) {
       if (schema.hasOwnProperty(propertyName)) {
-        propertyOptions = schema[propertyName];
+        schemaItem = schema[propertyName];
 
-        if (propertyOptions.type.isSCResourceCollection) { // has many
-          if (propertyOptions.url) {
+        if (schemaItem.type().isSCResourceCollection) { // has many
+          if (schemaItem.url) {
             properties[propertyName] = hasManyFunction;
           } else {
-            properties[propertyName] = createPropertyFunction(propertyOptions);
+            properties[propertyName] = createPropertyFunction(schemaItem);
           }
         } else { // simple attribute or has-one
-          properties[propertyName] = createPropertyFunction(propertyOptions);
+          properties[propertyName] = createPropertyFunction(schemaItem);
 
-          if (propertyOptions.nested) { // nested has-one
+          if (schemaItem.nested) { // nested has-one
             // in adition to the simple accessor, we also setup a property to get/set the id
-            properties[propertyName + '_id'] = createNestedHasOneIdProperty(propertyName, propertyOptions);
+            properties[propertyName + '_id'] = createNestedHasOneIdProperty(propertyName, schemaItem);
           }
 
         }
@@ -648,13 +652,21 @@
       }
       return this.deferedFetch;
     },
+    _resolveType: function() {
+      if (isString(this.type)) {
+        var type = SC.getPath(this.type);
+        if (type) this.type = type;
+      }
+    },
     _fetch: function(callback) {
+      this._resolveType();
       return SC.Resource.ajax({
         url: this.url || this.type.resourceURL(),
         success: callback
       });
     },
     instantiateItems: function(items) {
+      this._resolveType();
       return items.map(function(item) {
         if (item instanceof this.type) {
           return item;
@@ -664,6 +676,7 @@
       }, this);
     },
     parse: function(json) {
+      this._resolveType();
       if (isFunction(this.type.parse)) {
         return json.map(this.type.parse);
       }
