@@ -293,12 +293,12 @@
         };
 
         SC.addListener(this, 'willFetch', this, function() {
-          SC.set(this, 'resourceState', SC.Resource.Lifecycle.FETCHING);
+          SC.set(self, 'resourceState', SC.Resource.Lifecycle.FETCHING);
           updateExpiry();
         });
 
         SC.addListener(this, 'didFetch', this, function() {
-          SC.set(this, 'resourceState', SC.Resource.Lifecycle.FETCHED);
+          SC.set(self, 'resourceState', SC.Resource.Lifecycle.FETCHED);
           updateExpiry();
         });
       },
@@ -314,9 +314,7 @@
 
       expire: function() {
         SC.set(this, 'resourceState', SC.Resource.Lifecycle.EXPIRING);
-        SC.run.next(this, function() {
-          SC.set(this, 'resourceState', SC.Resource.Lifecycle.EXPIRED);
-        });
+        SC.run.next(this, $.proxy(SC.set, SC, this, 'resourceState', SC.Resource.Lifecycle.EXPIRED));
         SC.set(this, 'expireAt', new Date());
       },
 
