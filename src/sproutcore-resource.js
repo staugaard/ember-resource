@@ -261,6 +261,8 @@
     EXPIRED:      30,
     FETCHING:     40,
     FETCHED:      50,
+    DESTOYING:    60,
+    DESTROYED:    70,
 
     classMixin: SC.Mixin.create({
       expireIn: 60 * 5,
@@ -399,10 +401,13 @@
     },
 
     destroy: function() {
+      var previousState = SC.get(this, 'resourceState');
+      SC.set(this, 'resourceState', SC.Resource.Lifecycle.DESTROYING);
       return SC.Resource.ajax({
         type: 'DELETE',
         url:  this.resourceURL()
-      });
+      }).done($.proxy(SC.set, SC, this, 'resourceState', SC.Resource.Lifecycle.DESTROYED))
+        .fail($.proxy(SC.set, SC, this, 'resourceState', previousState));
     }
   }, SC.Resource.Lifecycle.prototypeMixin);
 
