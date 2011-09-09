@@ -154,7 +154,7 @@
 
         var array;
         if (instance instanceof SC.ResourceCollection) {
-          array = instance.get('content');
+          array = SC.get(instance, 'content');
         } else if (instance instanceof Array) {
           array = instance;
         }
@@ -162,7 +162,7 @@
         if (array) {
           return array.map(function(item) {
             if (item instanceof schemaItem.itemType()) {
-              return item.get('data');
+              return SC.get(item, 'data');
             } else if (isObject(item)) {
               return item;
             } else {
@@ -196,7 +196,7 @@
 
         var array;
         if (instances instanceof SC.ResourceCollection) {
-          array = instances.get('content');
+          array = SC.get(instances, 'content');
         } else if (instances instanceof Array) {
           array = instances;
         }
@@ -204,7 +204,7 @@
         if (array) {
           return array.map(function(item) {
             if (item instanceof schemaItem.itemType()) {
-              return item.get('id');
+              return SC.get(item, 'id');
             } else if (isObject(item)) {
               return item.id;
             } else {
@@ -302,34 +302,34 @@
       },
 
       isFetchable: function() {
-        var state = this.get('resourceState');
+        var state = SC.get(this, 'resourceState');
         return state == SC.Resource.Lifecycle.UNFETCHED || state === SC.Resource.Lifecycle.EXPIRED;
       }.property('resourceState').cacheable(),
 
       isInitializing: function() {
-        return (this.get('resourceState') || SC.Resource.Lifecycle.INITIALIZING) === SC.Resource.Lifecycle.INITIALIZING;
+        return (SC.get(this, 'resourceState') || SC.Resource.Lifecycle.INITIALIZING) === SC.Resource.Lifecycle.INITIALIZING;
       }.property('resourceState').cacheable(),
 
       expire: function() {
-        this.set('resourceState', SC.Resource.Lifecycle.EXPIRING);
+        SC.set(this, 'resourceState', SC.Resource.Lifecycle.EXPIRING);
         SC.run.next(this, function() {
-          this.set('resourceState', SC.Resource.Lifecycle.EXPIRED);
+          SC.set(this, 'resourceState', SC.Resource.Lifecycle.EXPIRED);
         });
-        this.set('expireAt', new Date());
+        SC.set(this, 'expireAt', new Date());
       },
 
       isExpired: function() {
         var isExpired = false;
 
-        var expireAt = this.get('expireAt');
+        var expireAt = SC.get(this, 'expireAt');
         if (expireAt) {
           isExpired = expireAt.getTime() <= (new Date()).getTime();
         }
 
         if (isExpired) {
-          this.set('resourceState', SC.Resource.Lifecycle.EXPIRING);
+          SC.set(this, 'resourceState', SC.Resource.Lifecycle.EXPIRING);
           SC.run.next(this, function() {
-            this.set('resourceState', SC.Resource.Lifecycle.EXPIRED);
+            SC.set(this, 'resourceState', SC.Resource.Lifecycle.EXPIRED);
           });
         }
 
@@ -342,7 +342,7 @@
     isSCResource: true,
 
     fetch: function() {
-      if (!this.get('isFetchable')) return null;
+      if (!SC.get(this, 'isFetchable')) return null;
 
       var url = this.resourceURL();
 
@@ -350,14 +350,14 @@
 
       var self = this;
 
-      if (this.deferedFetch && !this.get('isExpired')) return this.deferedFetch;
+      if (this.deferedFetch && !SC.get(this, 'isExpired')) return this.deferedFetch;
 
       SC.sendEvent(self, 'willFetch');
 
       this.deferedFetch = SC.Resource.ajax({
         url: url,
         success: function(json) {
-          self.setProperties(self.constructor.parse(json));
+          SC.setProperties(self, self.constructor.parse(json));
         }
       });
 
@@ -387,7 +387,7 @@
         data: this.toJSON()
       };
 
-      if (this.get('isNew')) {
+      if (SC.get(this, 'isNew')) {
         ajaxOptions.type = 'POST';
         ajaxOptions.url = this.constructor.resourceURL();
       } else {
@@ -441,7 +441,7 @@
       var serializedValue;
       if (data) serializedValue = SC.getPath(data, schemaItem.path);
 
-      if ((serializedValue === undefined || this.get('isExpired')) && this.get('isFetchable')) {
+      if ((serializedValue === undefined || SC.get(this, 'isExpired')) && SC.get(this, 'isFetchable')) {
         SC.run.next(this, this.fetch);
       }
 
@@ -465,9 +465,9 @@
   // The computed property function for a url based has-many association
   hasManyFunction = function(name, value) {
     if (arguments.length === 1) { // getter
-      if (this.get('isInitializing')) return null;
+      if (SC.get(this, 'isInitializing')) return null;
 
-      var id = this.get('id');
+      var id = SC.get(this, 'id');
       if (!id) return undefined;
 
       var schemaItem = this.constructor.schema[name];
@@ -488,9 +488,9 @@
   createNestedHasOneIdProperty = function(propertyName, schemaItem) {
     return function(name, value) {
       if (arguments.length === 1) {
-        value = this.getPath(propertyName + '.id');
+        value = SC.getPath(this, propertyName + '.id');
       } else {
-        this.set(propertyName, schemaItem.type().create({id: value}));
+        SC.set(this, propertyName, schemaItem.type().create({id: value}));
       }
       return value;
     }.property(propertyName);
@@ -633,12 +633,12 @@
     isSCResourceCollection: true,
     type: SC.required(),
     fetch: function() {
-      if (!this.get('isFetchable')) return;
+      if (!SC.get(this, 'isFetchable')) return;
 
       if (!this.prePopulated) {
         var self = this;
 
-        if (this.deferedFetch && !this.get('isExpired')) return this.deferedFetch;
+        if (this.deferedFetch && !SC.get(this, 'isExpired')) return this.deferedFetch;
 
         SC.sendEvent(self, 'willFetch');
 
