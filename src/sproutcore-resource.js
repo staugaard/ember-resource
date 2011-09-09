@@ -189,7 +189,7 @@
     expandHasManyInArraySchemaItem: function(name, schema) {
       var schemaItem = this;
       var value = schema[name];
-      value.path = value.path || name + '_ids';
+      this.path = value.path || name + '_ids';
 
       this.serialize = value.serialize || function(instances) {
         if (instances === undefined || instances === null) return instances;
@@ -217,7 +217,7 @@
       this.deserialize = value.deserialize || function(data) {
         if (data === undefined || data === null) return data;
 
-        if (data instanceof value.type) return data;
+        if (data instanceof schemaItem.type()) return data;
 
         return schemaItem.type().create({
           content: data.map(function(id) { return {id: id}; }),
