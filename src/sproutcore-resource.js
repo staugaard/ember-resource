@@ -359,7 +359,7 @@
       this.deferedFetch = SC.Resource.ajax({
         url: url,
         success: function(json) {
-          SC.setProperties(self, self.constructor.parse(json));
+          self.setProperties(self.constructor.parse(json));
         }
       });
 
