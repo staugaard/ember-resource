@@ -241,7 +241,7 @@
       }
       return this.theItemType;
     }
-  }
+  };
 
   SC.Resource.ajax = function(options) {
     options.dataType = options.dataType || 'json';
