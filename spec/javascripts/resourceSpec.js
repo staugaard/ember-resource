@@ -33,4 +33,9 @@ describe('A Resource instance', function() {
 
   });
 
+  it('allows setting of properties not in the schema during creation', function() {
+    model = Model.create({ undefinedProperty: 'foo' });
+    expect(model.get('undefinedProperty')).toEqual('foo');
+  });
+
 });
