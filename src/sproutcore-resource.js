@@ -552,7 +552,7 @@
       if (klass === this) {
         var instance;
         this.identityMap = this.identityMap || {};
-        if (options && options.id) {
+        if (options && options.id && !options.skipIdentityMap) {
           var id = options.id.toString();
           instance = this.identityMap[id];
           if (!instance) {
@@ -560,6 +560,7 @@
             SC.set(instance, 'data', options);
           }
         } else {
+          delete options.skipIdentityMap;
           instance = this._super.call(this);
           SC.set(instance, 'data', options);
         }
