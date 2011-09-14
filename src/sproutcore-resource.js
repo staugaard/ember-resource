@@ -314,6 +314,10 @@
         return (SC.get(this, 'resourceState') || SC.Resource.Lifecycle.INITIALIZING) === SC.Resource.Lifecycle.INITIALIZING;
       }.property('resourceState').cacheable(),
 
+      isFetching: function() {
+        return (SC.get(this, 'resourceState')) === SC.Resource.Lifecycle.FETCHING;
+      },
+
       expire: function() {
         SC.set(this, 'resourceState', SC.Resource.Lifecycle.EXPIRING);
         SC.run.next(this, $.proxy(SC.set, SC, this, 'resourceState', SC.Resource.Lifecycle.EXPIRED));
