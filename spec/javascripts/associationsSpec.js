@@ -13,6 +13,12 @@ describe('associations', function() {
     }
   });
 
+  var Addresses = SC.Resource.define({
+    schema: {
+      home: {type: Address, nested: true}
+    }
+  });
+
   describe('has one embedded', function() {
     it('should use embedded data', function() {
       var Person = SC.Resource.define({
@@ -34,18 +40,19 @@ describe('associations', function() {
       var address  = instance.get('address');
 
       expect(address instanceof Address).toBe(true);
-      expect(address.get('data')).toBe(data.address);
+      expect(address.getPath('data.street')).toBe(data.address.street);
 
       instance.set('address', Address.create({street: '2 Your Street'}));
-      expect(data.address.street).toBe('2 Your Street');
-      expect(data.address.zip).toBeUndefined();
+      expect(instance.getPath('data.address.street')).toBe('2 Your Street');
+      expect(instance.getPath('data.address.zip')).toBeUndefined();
     });
 
     it('should support path overriding', function() {
       var Person = SC.Resource.define({
         schema: {
           name: String,
-          address: {type: Address, nested: true, path: 'addresses.home'}
+          address: {type: Address, nested: true, path: 'addresses.home'},
+          addresses: {type: Addresses, nested: true}
         }
       });
 
@@ -63,11 +70,11 @@ describe('associations', function() {
       var address  = instance.get('address');
 
       expect(address instanceof Address).toBe(true);
-      expect(address.get('data')).toBe(data.addresses.home);
+      expect(address.getPath('data.street')).toBe(instance.getPath('data.addresses.home.street'));
 
       instance.set('address', Address.create({street: '2 Your Street'}));
-      expect(data.addresses.home.street).toBe('2 Your Street');
-      expect(data.addresses.home.zip).toBeUndefined();
+      expect(instance.getPath('data.addresses.home.street')).toBe('2 Your Street');
+      expect(instance.getPath('data.addresses.home.zip')).toBeUndefined();
     });
   });
 
@@ -174,7 +181,7 @@ describe('associations', function() {
 
         address.set('street', '3 Other Street');
         expect(address.get('street')).toBe('3 Other Street');
-        expect(data.home_addresses[0].street).toBe('3 Other Street');
+        expect(person.getPath('home_addresses.firstObject.street')).toBe('3 Other Street');
       });
 
       it("should use the class's parse method", function() {
