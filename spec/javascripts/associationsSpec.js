@@ -7,7 +7,7 @@ describe('associations', function() {
     },
 
     parse: function(json) {
-      json.city = json.city_name;
+      json.city = json.city || json.city_name;
       delete json.city_name;
       return json;
     }
@@ -198,6 +198,7 @@ describe('associations', function() {
 
         var person = Person.create(data),
             address = person.get('home_addresses').objectAt(0);
+
         expect(address).toBeTruthy();
         expect(address.get('city')).toEqual('Anytown');
       });
