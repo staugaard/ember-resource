@@ -53,6 +53,8 @@
         this.path = value.path || name;
       }
 
+      this.fetchable = name !== 'id';
+
       var serialize, deserialize;
       switch (this.theType) {
         case Number:
@@ -319,13 +321,14 @@
       },
 
       expire: function() {
-        SC.set(this, 'resourceState', SC.Resource.Lifecycle.EXPIRING);
-        SC.run.next(this, $.proxy(SC.set, SC, this, 'resourceState', SC.Resource.Lifecycle.EXPIRED));
-        SC.set(this, 'expireAt', new Date());
+        SC.run.next(this, function() {
+          SC.set(this, 'expireAt', new Date());
+        });
       },
 
       isExpired: function() {
-        var isExpired = false;
+        var isExpired = this.get('resourceState') === SC.Resource.Lifecycle.EXPIRED;
+        if (isExpired) return true;
 
         var expireAt = SC.get(this, 'expireAt');
         if (expireAt) {
@@ -333,10 +336,7 @@
         }
 
         if (isExpired) {
-          SC.set(this, 'resourceState', SC.Resource.Lifecycle.EXPIRING);
-          SC.run.next(this, function() {
-            SC.set(this, 'resourceState', SC.Resource.Lifecycle.EXPIRED);
-          });
+          SC.set(this, 'resourceState', SC.Resource.Lifecycle.EXPIRED);
         }
 
         return isExpired;
@@ -454,7 +454,7 @@
       var serializedValue;
       if (data) serializedValue = SC.getPath(data, schemaItem.path);
 
-      if ((serializedValue === undefined || SC.get(this, 'isExpired')) && SC.get(this, 'isFetchable')) {
+      if (schemaItem.fetchable && (serializedValue === undefined || SC.get(this, 'isExpired'))) {
         SC.run.next(this, this.fetch);
       }
 
