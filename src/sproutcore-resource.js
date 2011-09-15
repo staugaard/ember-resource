@@ -472,7 +472,7 @@
 
   // Build a cumputed property function for a regular property.
   createPropertyFunction = function(schemaItem) {
-    return propertyFunction.property('data.' + schemaItem.path, 'isExpired').cacheable();
+    return propertyFunction.property('data.' + schemaItem.path, 'isExpired', 'isFetchable').cacheable();
   };
 
   // The computed property function for a url based has-many association
@@ -494,9 +494,9 @@
 
       return schemaItem.deserialize(options);
     } else { // setter
-      // throw "You can not set this property";
+      throw "You can not set this property";
     }
-  }.property('id').cacheable();
+  }.property('id', 'isInitializing').cacheable();
 
   createNestedHasOneIdProperty = function(propertyName, schemaItem) {
     return function(name, value) {
