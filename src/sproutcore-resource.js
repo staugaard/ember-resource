@@ -345,9 +345,13 @@
   SC.Resource.reopen({
     isSCResource: true,
 
+    updateWithApiData: function(json) {
+      this.setProperties(this.constructor.parse(json));
+    },
+
     fetch: function() {
       if (!SC.get(this, 'isFetchable')) return null;
-
+      
       var url = this.resourceURL();
 
       if (!url) return;
@@ -361,7 +365,7 @@
       this.deferedFetch = SC.Resource.ajax({
         url: url,
         success: function(json) {
-          self.setProperties(self.constructor.parse(json));
+          self.updateWithApiData(json);
         }
       });
 
