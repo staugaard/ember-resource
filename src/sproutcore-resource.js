@@ -351,7 +351,7 @@
 
     fetch: function() {
       if (!SC.get(this, 'isFetchable')) return null;
-      
+
       var url = this.resourceURL();
 
       if (!url) return;
@@ -551,6 +551,21 @@
       return this;
     },
 
+    extractNonSchemaProperties: function(attrs) {
+      var ret = {};
+      for(var key in attrs) {
+        if(!attrs.hasOwnProperty(key)) {
+          continue;
+        }
+
+        if(!this.schema.hasOwnProperty(key)) {
+          ret[key] = attrs[key];
+        }
+      }
+
+      return ret;
+    },
+
     // Create an instance of this resource. If `options` includes an
     // `id`, first check the identity map and return the existing resource
     // with that ID if found.
@@ -566,11 +581,13 @@
           if (!instance) {
             this.identityMap[id] = instance = this._super.call(this);
             SC.set(instance, 'data', options);
+            instance.setProperties(this.extractNonSchemaProperties(options));
           }
         } else {
           delete options.skipIdentityMap;
           instance = this._super.call(this);
           SC.set(instance, 'data', options);
+          instance.setProperties(this.extractNonSchemaProperties(options));
         }
         return instance;
       } else {
