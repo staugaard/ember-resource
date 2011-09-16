@@ -51,9 +51,8 @@
         }
       } else { // a regular attribute
         this.path = value.path || name;
+        this.fetchable = name !== 'id';
       }
-
-      this.fetchable = name !== 'id';
 
       var serialize, deserialize;
       switch (this.theType) {
@@ -87,6 +86,7 @@
 
   SC.Resource.SchemaItem.prototype = {
     expandNestedHasOneSchemaItem: function(name, schema) {
+      this.fetchable = true;
       var schemaItem = this;
       var value = schema[name];
       this.path = value.path || name;
@@ -114,6 +114,7 @@
     },
 
     expandRemoteHasOneSchemaItem: function(name, schema) {
+      this.fetchable = false;
       var schemaItem = this;
       var value = schema[name];
       this.path = value.path || name + '_id';
@@ -137,6 +138,7 @@
     },
 
     expandRemoteHasManySchemaItem: function(name, schema) {
+      this.fetchable = false;
       var schemaItem = this;
       var value = schema[name];
 
@@ -147,6 +149,7 @@
     },
 
     expandNestedHasManySchemaItem: function(name, schema) {
+      this.fetchable = true;
       var schemaItem = this;
       var value = schema[name];
       this.path = value.path || name;
@@ -189,6 +192,7 @@
     },
 
     expandHasManyInArraySchemaItem: function(name, schema) {
+      this.fetchable = true;
       var schemaItem = this;
       var value = schema[name];
       this.path = value.path || name + '_ids';
