@@ -124,10 +124,10 @@ describe('schema definition', function() {
     expect(instance.get('size')).toBe(5);
 
     instance.set('id', '2');
-    expect(instance.getPath('data.id')).toBe(2);
+    expect(data.id).toBe(2);
 
     instance.set('size', 3);
-    expect(instance.getPath('data.size')).toBe(3);
+    expect(data.size).toBe(3);
   });
 
   it('should create String properties', function() {
@@ -144,10 +144,10 @@ describe('schema definition', function() {
     expect(instance.get('size')).toBe('large');
 
     instance.set('id', 2);
-    expect(instance.getPath('data.id')).toBe('2');
+    expect(data.id).toBe('2');
 
     instance.set('size', 'small');
-    expect(instance.getPath('data.size')).toBe('small');
+    expect(data.size).toBe('small');
   });
 
   it('should create Date properties', function() {
@@ -194,15 +194,15 @@ describe('schema definition', function() {
     expect(instance.get('bad')).toBe(false);
 
     instance.set('public', 'true');
-    expect(instance.getPath('data.public')).toBe(true, "convert 'true' to true");
+    expect(data.public).toBe(true, "convert 'true' to true");
 
     instance.set('public', 'false');
-    expect(instance.getPath('data.public')).toBe(false, "convert 'false' to false");
+    expect(data.public).toBe(false, "convert 'false' to false");
 
     instance.set('public', true);
-    expect(instance.getPath('data.public')).toBe(true, "convert true to true");
+    expect(data.public).toBe(true, "convert true to true");
 
     instance.set('public', false);
-    expect(instance.getPath('data.public')).toBe(false, "convert false to false");
+    expect(data.public).toBe(false, "convert false to false");
   });
 });

@@ -209,8 +209,6 @@
               return SC.get(item, 'id');
             } else if (isObject(item)) {
               return item.id;
-            } else if (SC.typeOf(item) === 'number') {
-              return item;
             } else {
               throw 'invalid item in collection';
             }
@@ -347,10 +345,6 @@
   SC.Resource.reopen({
     isSCResource: true,
 
-    updateWithApiData: function(json) {
-      this.setProperties(this.constructor.parse(json));
-    },
-
     fetch: function() {
       if (!SC.get(this, 'isFetchable')) return null;
 
@@ -367,7 +361,7 @@
       this.deferedFetch = SC.Resource.ajax({
         url: url,
         success: function(json) {
-          self.updateWithApiData(json);
+          self.setProperties(self.constructor.parse(json));
         }
       });
 
@@ -567,21 +561,12 @@
           instance = this.identityMap[id];
           if (!instance) {
             this.identityMap[id] = instance = this._super.call(this);
-
-            if(!SC.get(instance, 'data')) {
-              SC.set(instance, 'data', {});
-            }
-
-            instance.setProperties(options);
+            SC.set(instance, 'data', options);
           }
         } else {
           delete options.skipIdentityMap;
           instance = this._super.call(this);
-          if(!SC.get(instance, 'data')) {
-            SC.set(instance, 'data', {});
-          }
-
-          instance.setProperties(options);
+          SC.set(instance, 'data', options);
         }
         return instance;
       } else {
