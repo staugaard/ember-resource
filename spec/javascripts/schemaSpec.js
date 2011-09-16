@@ -1,10 +1,8 @@
 describe('schema definition', function() {
   describe('of attributes', function() {
-    var Model, serialize;
+    var Model;
 
     beforeEach(function() {
-      serialize = function(value) { return value === 1; };
-
       Model = SC.Resource.define({
         schema: {
           id:       {type: Number, path: 'somewhere.deep.id'},
@@ -12,9 +10,7 @@ describe('schema definition', function() {
           age:      Number,
           name:     String,
           birthday: Date,
-          single:   Boolean,
-          is_male:   {type: Boolean, serialize: serialize},
-          is_female: {type: Boolean, deserialize: serialize}
+          single:   Boolean
         }
       });
     });
@@ -28,41 +24,23 @@ describe('schema definition', function() {
     });
 
     it('should support Number', function() {
-      expect(Model.schema.age.type()).toBe(Number);
+      expect(Model.schema.age.get('type')).toBe(Number);
       expect(Model.schema.age.path).toBe('age');
-      expect(Model.schema.age.serialize).toBeDefined();
-      expect(Model.schema.age.deserialize).toBeDefined();
     })
 
     it('should support String', function() {
-      expect(Model.schema.name.type()).toBe(String);
+      expect(Model.schema.name.get('type')).toBe(String);
       expect(Model.schema.name.path).toBe('name');
-      expect(Model.schema.name.serialize).toBeDefined();
-      expect(Model.schema.name.deserialize).toBeDefined();
     })
 
     it('should support Date', function() {
-      expect(Model.schema.birthday.type()).toBe(Date);
+      expect(Model.schema.birthday.get('type')).toBe(Date);
       expect(Model.schema.birthday.path).toBe('birthday');
-      expect(Model.schema.birthday.serialize).toBeDefined();
-      expect(Model.schema.birthday.deserialize).toBeDefined();
     })
 
     it('should support Boolean', function() {
-      expect(Model.schema.single.type()).toBe(Boolean);
+      expect(Model.schema.single.get('type')).toBe(Boolean);
       expect(Model.schema.single.path).toBe('single');
-      expect(Model.schema.single.serialize).toBeDefined();
-      expect(Model.schema.single.deserialize).toBeDefined();
-    })
-
-    it('should allow a custom serialize', function() {
-      expect(Model.schema.is_male.serialize).toBe(serialize);
-      expect(Model.schema.is_male.deserialize).toBeDefined();
-    })
-
-    it('should allow a custom deserialize', function() {
-      expect(Model.schema.is_female.serialize).toBeDefined();
-      expect(Model.schema.is_female.deserialize).toBe(serialize);
     })
   });
 
@@ -88,21 +66,21 @@ describe('schema definition', function() {
     });
 
     it('should use the specified path when given', function() {
-      expect(Model.schema.work_address.path).toBe('work_addr_id');
+      expect(Model.schema.work_address.get('path')).toBe('work_addr_id');
     });
 
     it('should guess a path from the name when not given', function() {
-      expect(Model.schema.home_address.path).toBe('home_address_id');
+      expect(Model.schema.home_address.get('path')).toBe('home_address_id');
     });
 
     it('should define a Number attribute at the path if not present', function() {
       expect(Model.schema.home_address_id).toBeDefined();
-      expect(Model.schema.home_address_id.type()).toBe(Number);
+      expect(Model.schema.home_address_id.get('type')).toBe(Number);
     });
 
     it('should not override the attribute at the path if present', function() {
       expect(Model.schema.work_addr_id).toBeDefined();
-      expect(Model.schema.work_addr_id.type()).toBe(String);
+      expect(Model.schema.work_addr_id.get('type')).toBe(String);
     });
 
     it('should not create an *_id attribute for nested associations', function() {
