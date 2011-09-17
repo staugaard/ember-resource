@@ -84,6 +84,10 @@
     }
   };
 
+  SC.Resource.SchemaItem.create = function(name, schema) {
+    return new SC.Resource.SchemaItem(name, schema);
+  }
+
   SC.Resource.SchemaItem.prototype = {
     expandNestedHasOneSchemaItem: function(name, schema) {
       this.fetchable = true;
@@ -93,7 +97,7 @@
 
       if (!schema[this.path]) {
         schema[this.path] = Object;
-        schema[this.path] = new SC.Resource.SchemaItem(this.path, schema);
+        schema[this.path] = SC.Resource.SchemaItem.create(this.path, schema);
       }
 
       this.serialize = value.serialize || function(instance) {
@@ -121,7 +125,7 @@
 
       if (!schema[this.path]) {
         schema[this.path] = Number;
-        schema[this.path] = new SC.Resource.SchemaItem(this.path, schema);
+        schema[this.path] = SC.Resource.SchemaItem.create(this.path, schema);
       }
 
       this.serialize = value.serialize || function(instance) {
@@ -424,7 +428,7 @@
   expandSchema = function(schema) {
     for (var name in schema) {
       if (schema.hasOwnProperty(name)) {
-        schema[name] = new SC.Resource.SchemaItem(name, schema);
+        schema[name] = SC.Resource.SchemaItem.create(name, schema);
       }
     }
 
