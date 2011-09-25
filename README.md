@@ -96,7 +96,7 @@ MyApp.Post = SC.Resource.define({
     comments: {
       type:     SC.ResourceCollection,
       itemType: 'MyApp.Comment',
-      url:      '/posts/%@/comments
+      url:      '/posts/%@/comments'
     }
   }
 });
