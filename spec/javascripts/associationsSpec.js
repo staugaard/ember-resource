@@ -1,6 +1,7 @@
 describe('associations', function() {
   var Address = SC.Resource.define({
     schema: {
+      id:     Number,
       street: String,
       zip:    Number,
       city:   String
@@ -211,6 +212,19 @@ describe('associations', function() {
         });
       });
 
+      it("should use the ids in the array", function() {
+        var data = {
+          name: 'Joe Doe',
+          home_address_ids: [1, 2]
+        };
+
+        var person    = Person.create(data),
+            addresses = person.get('home_addresses');
+
+        expect(addresses.get('length')).toBe(2);
+        expect(addresses.objectAt(0).get('id')).toBe(1);
+        expect(addresses.objectAt(1).get('id')).toBe(2);
+      });
     });
 
   });
