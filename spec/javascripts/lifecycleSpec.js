@@ -13,7 +13,7 @@ describe('Lifecycle', function() {
     server = sinon.fakeServer.create();
     server.respondWith("GET", "/people/1",
                        [200, { "Content-Type": "application/json" },
-                       '{ id: 1, name: "Mick Staugaard" }']);
+                       '{ "id": 1, "name": "Mick Staugaard" }']);
   });
 
   afterEach(function() {

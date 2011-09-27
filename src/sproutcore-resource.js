@@ -767,7 +767,7 @@
         SC.sendEvent(self, 'willFetch');
 
         this.deferedFetch = this._fetch(function(json) {
-          SC.set(self, 'content', self.instantiateItems(self.parse(json)));
+          SC.set(self, 'content', self.parse(json));
         });
 
         this.deferedFetch.always(function() {
@@ -812,9 +812,10 @@
       if (arguments.length === 1) { // getter
         SC.run.next(this, this.fetch);
       } else { // setter
-        return this.instantiateItems(value);
+        this.theContent = this.instantiateItems(value);
       }
-    }.property().cacheable()
+      return this.theContent;
+    }.property('isExpired')
   }, SC.Resource.Lifecycle.prototypeMixin);
 
   SC.ResourceCollection.reopenClass({
