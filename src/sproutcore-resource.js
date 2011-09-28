@@ -477,6 +477,12 @@
         return (SC.get(this, 'resourceState')) === SC.Resource.Lifecycle.FETCHING;
       },
 
+      scheduleFetch: function() {
+        if (SC.get(this, 'isFetchable')) {
+          SC.run.next(this, this.fetch);
+        }
+      },
+
       expire: function() {
         SC.run.next(this, function() {
           SC.set(this, 'expireAt', new Date());
@@ -616,7 +622,7 @@
           } else {
             value = schemaItem.getValue.call(schemaItem, this);
             if ((value === undefined || SC.get(this, 'isExpired')) && schemaItem.get('fetchable')) {
-              SC.run.next(this, this.fetch);
+              this.scheduleFetch();
             }
           }
           return value;
@@ -808,14 +814,17 @@
         return json;
       }
     },
+    length: function() {
+      var content = SC.get(this, 'content');
+      var length = content ? SC.get(content, 'length') : 0;
+      if (length === 0 ||  this.get('isExpired'))  this.scheduleFetch();
+      return length;
+    }.property('content.length', 'resourceState', 'isExpired').cacheable(),
     content: function(name, value) {
-      if (arguments.length === 1) { // getter
-        SC.run.next(this, this.fetch);
-      } else { // setter
-        this.theContent = this.instantiateItems(value);
+      if (arguments.length === 2) { // setter
+        return this.instantiateItems(value);
       }
-      return this.theContent;
-    }.property('isExpired')
+    }.property().cacheable()
   }, SC.Resource.Lifecycle.prototypeMixin);
 
   SC.ResourceCollection.reopenClass({

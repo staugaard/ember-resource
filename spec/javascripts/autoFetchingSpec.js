@@ -65,7 +65,7 @@ describe('Auto fetching', function() {
       server.respond();
     });
 
-    xit('should not fetch on creation', function() {
+    it('should not fetch on creation', function() {
       var hasFetched = false;
       var TestCollection = SC.ResourceCollection.extend({
         fetch: function() {
