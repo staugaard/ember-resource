@@ -199,6 +199,7 @@
       else {
         var instance = this._super.apply(this, arguments);
         instance.set('theType', definition.type);
+        instance.set('parse', definition.parse || definition.type.parse)
         return instance;
       }
     }
@@ -321,6 +322,7 @@
         var instance = this._super.apply(this, arguments);
         instance.set('theType', definition.type);
         instance.set('theItemType', definition.itemType);
+        instance.set('parse', definition.parse || definition.type.parse)
         return instance;
       }
     }
@@ -340,7 +342,7 @@
         url: url
       };
 
-      if (this.parse) options.parse = this.parse;
+      if (this.get('parse')) options.parse = this.get('parse');
 
       return this.get('type').create(options);
     },
@@ -378,14 +380,14 @@
       data = SC.getPath(data, this.get('path'));
       if (data === undefined || data === null) return data;
 
-      // A ResourceCollection doesn't parse content on creation, only
-      // when the content is fetched, which doesn't happen here.
-      data = data.map(this.parse || this.get('itemType').parse);
-
-      return this.get('type').create({
+      var options = {
         type: this.get('itemType'),
         content: data
-      });
+      };
+
+      if (this.get('parse')) options.parse = this.get('parse');
+
+      return this.get('type').create(options);
     },
 
     setValue: function(instance, value) {
@@ -876,7 +878,7 @@
         instance = this._super.call(this, options);
 
         if (content) {
-          SC.set(instance, 'content', content);
+          SC.set(instance, 'content', instance.parse(content));
         }
       }
 
