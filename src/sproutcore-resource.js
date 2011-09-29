@@ -228,9 +228,36 @@
       var definition = schema[name];
       var instance = this._super.apply(this, arguments);
       instance.set('path', definition.path || name);
+
+      var id_name = name + '_id';
+      if (!schema[id_name]) {
+        schema[id_name] = {type: Number, association: instance };
+        schema[id_name] = SC.Resource.HasOneNestedIdSchemaItem.create(id_name, schema);
+      }
+
       return instance;
     }
   });
+  SC.Resource.HasOneNestedIdSchemaItem = SC.Resource.AbstractSchemaItem.extend({
+    fetchable: true,
+    theType: Number,
+    getValue: function(instance) {
+      return instance.getPath(this.get('path'));
+    },
+    setValue: function(instance, value) {
+      SC.set(instance, this.getPath('association.name'), {id: value});
+    }
+  });
+  SC.Resource.HasOneNestedIdSchemaItem.reopenClass({
+    create: function(name, schema) {
+      var definition = schema[name];
+      var instance = this._super.apply(this, arguments);
+      instance.set('association', definition.association);
+      instance.set('path', definition.association.get('path') + '.id');
+      return instance;
+    }
+  });
+
 
   SC.Resource.HasOneRemoteSchemaItem = SC.Resource.HasOneSchemaItem.extend({
     getValue: function(instance) {

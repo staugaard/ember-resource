@@ -15,6 +15,8 @@ describe('associations', function() {
   });
 
   describe('has one embedded', function() {
+    var data;
+
     it('should use embedded data', function() {
       var Person = SC.Resource.define({
         schema: {
@@ -70,6 +72,35 @@ describe('associations', function() {
       expect(data.addresses.home.street).toBe('2 Your Street');
       expect(data.addresses.home.zip).toBeUndefined();
     });
+
+    it('should have an id accessor', function() {
+      var Person = SC.Resource.define({
+        schema: {
+          name: String,
+          address: {type: Address, nested: true}
+        }
+      });
+
+      var data = {
+        name: 'Joe Doe',
+        address: {
+          id: '1',
+          street: '1 My Street',
+          zip: 12345
+        }
+      };
+
+      var instance = Person.create(data);
+      var address  = instance.get('address');
+
+      expect(instance.get('address_id')).toBe(1);
+
+      instance.set('address_id', '2');
+
+      expect(instance.get('address_id')).toBe(2);
+      expect(instance.get('address')).not.toBe(address);
+      expect(instance.getPath('address.id')).toBe(2);
+    })
   });
 
   describe('has many', function() {
