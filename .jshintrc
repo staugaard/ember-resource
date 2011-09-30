@@ -1,5 +1,8 @@
 {
-  "predef":   [ "$", "SC", "_" ],
+  "predef":   [
+                "$", "SC", "_", "describe", "it", "expect", "beforeEach",
+                "afterEach", "spyOn", "runs", "waits", "waitsFor", "sinon"
+              ],
 
   "adsafe":   false,
   "bitwise":  true,
