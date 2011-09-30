@@ -17,6 +17,16 @@ describe('associations', function() {
   describe('has one embedded', function() {
     var data;
 
+    beforeEach(function() {
+      data = {
+        name: 'Joe Doe',
+        address: {
+          street: '1 My Street',
+          zip: 12345
+        }
+      };
+    });
+
     it('should use embedded data', function() {
       var Person = SC.Resource.define({
         schema: {
@@ -24,14 +34,6 @@ describe('associations', function() {
           address: {type: Address, nested: true}
         }
       });
-
-      var data = {
-        name: 'Joe Doe',
-        address: {
-          street: '1 My Street',
-          zip: 12345
-        }
-      };
 
       var instance = Person.create(data);
       var address  = instance.get('address');
@@ -52,15 +54,8 @@ describe('associations', function() {
         }
       });
 
-      var data = {
-        name: 'Joe Doe',
-        addresses: {
-          home: {
-            street: '1 My Street',
-            zip: 12345
-          }
-        }
-      };
+      data.addresses = { home: data.address };
+      delete data.address;
 
       var instance = Person.create(data);
       var address  = instance.get('address');
@@ -81,14 +76,7 @@ describe('associations', function() {
         }
       });
 
-      var data = {
-        name: 'Joe Doe',
-        address: {
-          id: '1',
-          street: '1 My Street',
-          zip: 12345
-        }
-      };
+      data.address.id = '1';
 
       var instance = Person.create(data);
       var address  = instance.get('address');
