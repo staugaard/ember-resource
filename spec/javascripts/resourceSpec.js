@@ -6,7 +6,7 @@ describe('A Resource instance', function() {
       schema: {
         id:       Number,
         name:     String
-      },
+      }
     }).extend({
       url: '/people'
     });

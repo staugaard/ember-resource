@@ -15,7 +15,7 @@ describe('Inheritance', function() {
       schema: {
         id:       Number,
         name:     String
-      },
+      }
     });
   });
 
@@ -46,7 +46,7 @@ describe('Inheritance', function() {
           name: String
         }
       });
-    }
+    };
     expect(defineBadSubclass).toThrow("Schema item 'name' is already defined");
   });
 

@@ -26,26 +26,26 @@ describe('schema definition', function() {
     it('should support Number', function() {
       expect(Model.schema.age.get('type')).toBe(Number);
       expect(Model.schema.age.path).toBe('age');
-    })
+    });
 
     it('should support String', function() {
       expect(Model.schema.name.get('type')).toBe(String);
       expect(Model.schema.name.path).toBe('name');
-    })
+    });
 
     it('should support Date', function() {
       expect(Model.schema.birthday.get('type')).toBe(Date);
       expect(Model.schema.birthday.path).toBe('birthday');
-    })
+    });
 
     it('should support Boolean', function() {
       expect(Model.schema.single.get('type')).toBe(Boolean);
       expect(Model.schema.single.path).toBe('single');
-    })
+    });
   });
 
   describe('of has-one associations', function() {
-    var Person, Address;
+    var Model, Person, Address;
 
     beforeEach(function() {
       Address = SC.Resource.define({
@@ -90,7 +90,7 @@ describe('schema definition', function() {
       expect(Model.schema.other_address_id.get('association')).toBe(Model.schema.other_address);
       expect(Model.schema.other_address_id.get('path')).toBe('other_address.id');
     });
-  })
+  });
 
   it('should create Number properties', function() {
     var Model = SC.Resource.define({
@@ -148,8 +148,8 @@ describe('schema definition', function() {
     expect(instance.get('createdAt')).toEqual(date);
     expect(instance.get('updatedAt')).toEqual(date);
 
-    var date = new Date();
-    var dateString = date.toJSON();
+    date = new Date();
+    dateString = date.toJSON();
 
     instance.set('createdAt', date);
     expect(data.createdAt).toEqual(dateString, "convert a Date instance to a string");
@@ -176,15 +176,15 @@ describe('schema definition', function() {
     expect(instance.get('bad')).toBe(false);
 
     instance.set('public', 'true');
-    expect(data.public).toBe(true, "convert 'true' to true");
+    expect(data['public']).toBe(true, "convert 'true' to true");
 
     instance.set('public', 'false');
-    expect(data.public).toBe(false, "convert 'false' to false");
+    expect(data['public']).toBe(false, "convert 'false' to false");
 
     instance.set('public', true);
-    expect(data.public).toBe(true, "convert true to true");
+    expect(data['public']).toBe(true, "convert true to true");
 
     instance.set('public', false);
-    expect(data.public).toBe(false, "convert false to false");
+    expect(data['public']).toBe(false, "convert false to false");
   });
 });

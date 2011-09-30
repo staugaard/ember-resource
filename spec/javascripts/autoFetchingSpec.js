@@ -7,7 +7,7 @@ describe('Auto fetching', function() {
       schema: {
         id:       Number,
         name:     String
-      },
+      }
     });
 
     server = sinon.fakeServer.create();

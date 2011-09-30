@@ -100,7 +100,7 @@ describe('associations', function() {
       expect(instance.get('address_id')).toBe(2);
       expect(instance.get('address')).not.toBe(address);
       expect(instance.getPath('address.id')).toBe(2);
-    })
+    });
   });
 
   describe('has many', function() {
@@ -137,7 +137,7 @@ describe('associations', function() {
         expect(homeAddresses instanceof SC.ResourceCollection).toBe(true);
         expect(homeAddresses.type).toBe(Address);
         expect(homeAddresses.url).toBe('/people/1/addresses');
-      })
+      });
 
       it('should support url functions', function() {
         var person = Person.create({id: 1, name: 'Mick Staugaard'});
@@ -147,7 +147,7 @@ describe('associations', function() {
         expect(workAddresses instanceof SC.ResourceCollection).toBe(true);
         expect(workAddresses.type).toBe(Address);
         expect(workAddresses.url).toBe('/people/1/addresses');
-      })
+      });
     });
 
     describe('nested', function() {
@@ -200,7 +200,7 @@ describe('associations', function() {
           expect(address instanceof Address).toBe(true);
           expect(address.get('street')).toBe(data.home_addresses[i].street);
           expect(address.get('zip')).toBe(data.home_addresses[i].zip);
-        };
+        }
 
         address = homeAddresses.objectAt(0);
 

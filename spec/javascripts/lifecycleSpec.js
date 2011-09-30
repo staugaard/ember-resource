@@ -7,7 +7,7 @@ describe('Lifecycle', function() {
       schema: {
         id:       Number,
         name:     String
-      },
+      }
     });
 
     server = sinon.fakeServer.create();
@@ -64,7 +64,7 @@ describe('Lifecycle', function() {
       });
 
       it('should set expiry in 5 minutes', function() {
-        fiveMinutesFromNow = new Date();
+        var fiveMinutesFromNow = new Date();
         fiveMinutesFromNow.setSeconds(fiveMinutesFromNow.getSeconds() + (60 * 5));
 
         expect(person.get('expireAt')).toBeDefined();
@@ -75,6 +75,8 @@ describe('Lifecycle', function() {
   });
 
   describe('expiry', function() {
+    var person;
+
     beforeEach(function() {
       person = Person.create({id: 1});
     });
@@ -101,7 +103,7 @@ describe('Lifecycle', function() {
       waitsFor(function() {
         return person.get('isExpired');
       }, 'person never expired', 1000);
-    })
+    });
   });
 
 });
