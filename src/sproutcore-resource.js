@@ -682,13 +682,22 @@
     },
 
     extractNonSchemaProperties: function(attrs) {
-      var ret = {};
+      var ret = {}, schemaKeys = [], path;
+
+      for(var key in this.schema) {
+        if(path = this.schema[key].get('path')) {
+          schemaKeys.push(path.split('.')[0]);
+        } else {
+          schemaKeys.push(key);
+        }
+      }
+
       for(var key in attrs) {
         if(!attrs.hasOwnProperty(key)) {
           continue;
         }
 
-        if(!this.schema.hasOwnProperty(key)) {
+        if(!schemaKeys.contains(key)) {
           ret[key] = attrs[key];
         }
       }

@@ -10,6 +10,7 @@ describe('A Resource instance', function() {
     }).extend({
       url: '/people'
     });
+
   });
 
   describe('with no ID', function() {
@@ -36,6 +37,24 @@ describe('A Resource instance', function() {
   it('allows setting of properties not in the schema during creation', function() {
     model = Model.create({ undefinedProperty: 'foo' });
     expect(model.get('undefinedProperty')).toEqual('foo');
+  });
+
+  it('allows setting of properties not in the schema during creation, considering paths', function() {
+
+    Model = SC.Resource.define({
+      schema: {
+        id:       Number,
+        name:     String,
+        foo:      {type: String, path: 'data.foo'}
+      }
+    }).extend({
+      url: '/people'
+    });
+
+    model = Model.create({ id: 1, undefinedProperty: 'foo', entry_id: 1, data: {foo: 'bar'} });
+    expect(model.get('undefinedProperty')).toEqual('foo');
+    expect(model.get('id')).toEqual(1);
+
   });
 
 });
