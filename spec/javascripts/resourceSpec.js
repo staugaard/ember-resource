@@ -5,7 +5,8 @@ describe('A Resource instance', function() {
     Model = SC.Resource.define({
       schema: {
         id:       Number,
-        name:     String
+        name:     String,
+        subject:  String
       }
     }).extend({
       url: '/people'
@@ -57,4 +58,17 @@ describe('A Resource instance', function() {
 
   });
 
+
+  describe('updating objects already in identity map', function() {
+    beforeEach(function() {
+      model = Model.create({id: 1, name: 'blah'});
+    });
+
+    it('should update objects in the identity map with new data', function() {
+      expect(model.get('subject')).toBeUndefined();
+      model = Model.create({id: 1, name: 'boo', subject: 'bar'});
+      expect(model.get('name')).toBe('boo');
+      expect(model.get('subject')).toBe('bar');
+    });
+  });
 });

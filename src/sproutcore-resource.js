@@ -721,6 +721,8 @@
             this.identityMap[id] = instance = this._super.call(this);
             SC.set(instance, 'data', options);
             instance.setProperties(this.extractNonSchemaProperties(options));
+          } else {
+            instance.setProperties(options);
           }
         } else {
           delete options.skipIdentityMap;
