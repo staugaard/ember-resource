@@ -433,12 +433,36 @@
   });
 
 
+  // Gives you access to `model` in your custom `errorHandler` methods.
+  // 1. `this` will refer to the model object.
+  // 2. `model` will be passed as the last argument
+  //
+  //     function errorHandler() {
+  //       this; // the model
+  //     }
+  //
+  //     function errorHandler(jqXHR, textStatus, errorThrown, model) {
+  //       model; // another way to reference the model
+  //     }
+  //
+  var errorHandlerWithModel = function(errorHandler, model) {
+    return function() {
+      var args = Array.prototype.slice.call(arguments, 0);
+      args.push(model);
+      errorHandler.apply(model, args);
+    }
+  };
+
   SC.Resource.ajax = function(options) {
     options.dataType = options.dataType || 'json';
     options.type     = options.type     || 'GET';
 
     if (!options.error && SC.Resource.errorHandler) {
-      options.error = SC.Resource.errorHandler;
+      if (options.model) {
+        options.error = errorHandlerWithModel(SC.Resource.errorHandler, options.model);
+      } else {
+        options.error = SC.Resource.errorHandler;
+      }
     }
 
     return $.ajax(options);
@@ -586,7 +610,8 @@
 
     save: function() {
       var ajaxOptions = {
-        data: this.toJSON()
+        data: this.toJSON(),
+        model: this
       };
 
       if (SC.get(this, 'isNew')) {
