@@ -107,11 +107,11 @@ Assuming that /comments/1 returns this JSON:
 ```javascript
 {
   id:      1,
-  body:    "Viagra spam shit",
+  body:    "I have something constructive to say.",
   post_id: 1,
   author: {
     id:   2,
-    name: "Fucking Spammer"
+    name: "Comment Author"
   }
 }
 ```
