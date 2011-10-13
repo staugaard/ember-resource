@@ -433,12 +433,37 @@
   });
 
 
+  // Gives custom error handlers access to the resource object.
+  // 1. `this` will refer to the SC.Resource object.
+  // 2. `resource` will be passed as the last argument
+  //
+  //     function errorHandler() {
+  //       this; // the SC.Resource
+  //     }
+  //
+  //     function errorHandler(jqXHR, textStatus, errorThrown, resource) {
+  //       resource; // another way to reference the resource object
+  //     }
+  //
+  var errorHandlerWithModel = function(errorHandler, resource) {
+    return function() {
+      var args = Array.prototype.slice.call(arguments, 0);
+      args.push(resource);
+      errorHandler.apply(resource, args);
+    }
+  };
+
   SC.Resource.ajax = function(options) {
     options.dataType = options.dataType || 'json';
     options.type     = options.type     || 'GET';
 
     if (!options.error && SC.Resource.errorHandler) {
-      options.error = SC.Resource.errorHandler;
+      if (options.resource) {
+        options.error = errorHandlerWithModel(SC.Resource.errorHandler, options.resource);
+        delete options.resource;
+      } else {
+        options.error = SC.Resource.errorHandler;
+      }
     }
 
     return $.ajax(options);
@@ -586,7 +611,8 @@
 
     save: function() {
       var ajaxOptions = {
-        data: this.toJSON()
+        data: this.toJSON(),
+        resource: this
       };
 
       if (SC.get(this, 'isNew')) {
