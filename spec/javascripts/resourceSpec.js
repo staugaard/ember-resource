@@ -1,5 +1,5 @@
 describe('A Resource instance', function() {
-  var Model, model;
+  var Model, model, server;
 
   beforeEach(function() {
     Model = SC.Resource.define({
@@ -71,4 +71,35 @@ describe('A Resource instance', function() {
       expect(model.get('subject')).toBe('bar');
     });
   });
+
+  describe('SC.Resource.ajax', function() {
+    beforeEach(function() {
+      server = sinon.fakeServer.create();
+    });
+
+    afterEach(function() {
+      server.restore();
+      SC.Resource.errorHandler = null;
+    });
+
+    describe('handling errors on save', function() {
+      beforeEach(function() {
+        server.respondWith('POST', '/people', [422, {}, '[["foo", "bar"]]']);
+      });
+
+      it('should pass a reference to the resource to the error handling function', function() {
+        var spy = jasmine.createSpy();
+        SC.Resource.errorHandler = function(a, b, c, fourthArgument) {
+          spy(fourthArgument);
+        }
+
+        var resource = Model.create({ name: 'foo' });
+        resource.save();
+        server.respond();
+
+        expect(spy).toHaveBeenCalledWith(resource);
+      });
+    });
+  });
+
 });
