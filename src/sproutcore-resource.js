@@ -460,6 +460,7 @@
     if (!options.error && SC.Resource.errorHandler) {
       if (options.resource) {
         options.error = errorHandlerWithModel(SC.Resource.errorHandler, options.resource);
+        delete options.resource;
       } else {
         options.error = SC.Resource.errorHandler;
       }
