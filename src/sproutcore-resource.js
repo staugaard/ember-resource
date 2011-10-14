@@ -47,7 +47,7 @@
       instance.set('name', name);
       return instance;
     }
-  })
+  });
 
 
   SC.Resource.SchemaItem = SC.Resource.AbstractSchemaItem.extend({});
@@ -58,7 +58,7 @@
 
       var type;
       if (definition === Number || definition === String || definition === Boolean || definition === Date || definition === Object) {
-        definition = {type: definition}
+        definition = {type: definition};
         schema[name] = definition;
       }
 
@@ -87,7 +87,7 @@
       var data = this.data(instance);
       if (data) {
         value = SC.getPath(data, this.get('path'));
-      };
+      }
 
       if (this.typeCast) {
         value = this.typeCast(value);
@@ -113,6 +113,8 @@
   SC.Resource.AttributeSchemaItem.reopenClass({
     create: function(name, schema) {
       var definition = schema[name];
+      var instance;
+
       if (this === SC.Resource.AttributeSchemaItem) {
         switch (definition.type) {
           case Number:
@@ -124,20 +126,20 @@
           case Date:
             return SC.Resource.DateAttributeSchemaItem.create(name, schema);
           default:
-            var instance = this._super.apply(this, arguments);
+            instance = this._super.apply(this, arguments);
             instance.set('fetchable', name !== 'id');
             instance.set('path', definition.path || name);
             return instance;
         }
       }
       else {
-        var instance = this._super.apply(this, arguments);
+        instance = this._super.apply(this, arguments);
         instance.set('fetchable', name !== 'id');
         instance.set('path', definition.path || name);
         return instance;
       }
     }
-  })
+  });
 
   SC.Resource.NumberAttributeSchemaItem = SC.Resource.AttributeSchemaItem.extend({
     theType: Number,
@@ -199,7 +201,7 @@
       else {
         var instance = this._super.apply(this, arguments);
         instance.set('theType', definition.type);
-        instance.set('parse', definition.parse || definition.type.parse)
+        instance.set('parse', definition.parse || definition.type.parse);
         return instance;
       }
     }
@@ -322,7 +324,7 @@
         var instance = this._super.apply(this, arguments);
         instance.set('theType', definition.type);
         instance.set('theItemType', definition.itemType);
-        instance.set('parse', definition.parse || definition.type.parse)
+        instance.set('parse', definition.parse || definition.type.parse);
         return instance;
       }
     }
@@ -332,7 +334,7 @@
     fetchable: false,
     dependencies: ['id', 'isInitializing'],
     getValue: function(instance) {
-      if (SC.get(instance, 'isInitializing')) return
+      if (SC.get(instance, 'isInitializing')) return;
 
       var url = this.url(instance);
       if (!url) return;
@@ -365,7 +367,7 @@
           if (id) {
             return definition.url.fmt(id);
           }
-        }
+        };
       }
 
       return instance;
@@ -402,7 +404,7 @@
 
       return instance;
     }
-  })
+  });
 
   SC.Resource.HasManyInArraySchemaItem = SC.Resource.HasManySchemaItem.extend({
     fetchable: true,
@@ -412,9 +414,10 @@
       data = SC.getPath(data, this.get('path'));
       if (data === undefined || data === null) return data;
 
+
       return this.get('type').create({
         type: this.get('itemType'),
-        content: data.map(function(id) { return {id: id}; }),
+        content: data.map(function(id) { return {id: id}; })
       });
     },
 
@@ -450,7 +453,7 @@
       var args = Array.prototype.slice.call(arguments, 0);
       args.push(resource);
       errorHandler.apply(resource, args);
-    }
+    };
   };
 
   SC.Resource.ajax = function(options) {
@@ -708,17 +711,19 @@
     },
 
     extractNonSchemaProperties: function(attrs) {
-      var ret = {}, schemaKeys = [], path;
+      var ret = {}, schemaKeys = [], path, key;
 
-      for(var key in this.schema) {
-        if(path = this.schema[key].get('path')) {
+      for(key in this.schema) {
+        path = this.schema[key].get('path');
+
+        if (path) {
           schemaKeys.push(path.split('.')[0]);
         } else {
           schemaKeys.push(key);
         }
       }
 
-      for(var key in attrs) {
+      for(key in attrs) {
         if(!attrs.hasOwnProperty(key)) {
           continue;
         }
