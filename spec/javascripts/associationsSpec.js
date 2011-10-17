@@ -39,11 +39,12 @@ describe('associations', function() {
       var address  = instance.get('address');
 
       expect(address instanceof Address).toBe(true);
-      expect(address.get('data')).toBe(data.address);
+      expect(address.get('street')).toBe('1 My Street');
+      expect(address.get('zip')).toBe(12345);
 
       instance.set('address', Address.create({street: '2 Your Street'}));
-      expect(data.address.street).toBe('2 Your Street');
-      expect(data.address.zip).toBeUndefined();
+      expect(instance.getPath('data.address.street')).toBe('2 Your Street');
+      expect(instance.getPath('data.address.zip')).toBeUndefined();
     });
 
     it('should support path overriding', function() {
@@ -60,12 +61,15 @@ describe('associations', function() {
       var instance = Person.create(data);
       var address  = instance.get('address');
 
+      debugger
+
       expect(address instanceof Address).toBe(true);
-      expect(address.get('data')).toBe(data.addresses.home);
+      expect(address.get('street')).toBe('1 My Street');
+      expect(address.get('zip')).toBe(12345);
 
       instance.set('address', Address.create({street: '2 Your Street'}));
-      expect(data.addresses.home.street).toBe('2 Your Street');
-      expect(data.addresses.home.zip).toBeUndefined();
+      expect(instance.getPath('data.addresses.home.street')).toBe('2 Your Street');
+      expect(instance.getPath('data.addresses.home.zip')).toBeUndefined();
     });
 
     it('should have an id accessor', function() {
@@ -79,6 +83,7 @@ describe('associations', function() {
       data.address.id = '1';
 
       var instance = Person.create(data);
+      data = instance.get('data');
       var address  = instance.get('address');
 
       expect(instance.get('address_id')).toBe(1);
@@ -194,7 +199,6 @@ describe('associations', function() {
 
         address.set('street', '3 Other Street');
         expect(address.get('street')).toBe('3 Other Street');
-        expect(data.home_addresses[0].street).toBe('3 Other Street');
       });
 
       it("should use the class's parse method", function() {

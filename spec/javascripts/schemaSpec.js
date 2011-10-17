@@ -101,15 +101,16 @@ describe('schema definition', function() {
     });
     var data = {id: 1, size: '5'};
     var instance = Model.create(data);
+    data = instance.get('data');
 
     expect(instance.get('id')).toBe(1);
     expect(instance.get('size')).toBe(5);
 
     instance.set('id', '2');
-    expect(data.id).toBe(2);
+    expect(instance.getPath('data.id')).toBe(2);
 
     instance.set('size', 3);
-    expect(data.size).toBe(3);
+    expect(instance.getPath('data.size')).toBe(3);
   });
 
   it('should create String properties', function() {
@@ -121,15 +122,16 @@ describe('schema definition', function() {
     });
     var data = {id: 1, size: 'large'};
     var instance = Model.create(data);
+    data = instance.get('data');
 
     expect(instance.get('id')).toBe('1');
     expect(instance.get('size')).toBe('large');
 
     instance.set('id', 2);
-    expect(data.id).toBe('2');
+    expect(instance.getPath('data.id')).toBe('2');
 
     instance.set('size', 'small');
-    expect(data.size).toBe('small');
+    expect(instance.getPath('data.size')).toBe('small');
   });
 
   it('should create Date properties', function() {
@@ -144,6 +146,7 @@ describe('schema definition', function() {
     });
     var data = {createdAt: dateString, updatedAt: date};
     var instance = Model.create(data);
+    data = instance.get('data');
 
     expect(instance.get('createdAt')).toEqual(date);
     expect(instance.get('updatedAt')).toEqual(date);
@@ -152,10 +155,10 @@ describe('schema definition', function() {
     dateString = date.toJSON();
 
     instance.set('createdAt', date);
-    expect(data.createdAt).toEqual(dateString, "convert a Date instance to a string");
+    expect(instance.getPath('data.createdAt')).toEqual(dateString, "convert a Date instance to a string");
     
     instance.set('updatedAt', dateString);
-    expect(data.updatedAt).toEqual(dateString, 'convert a string ("' + dateString + '") to a string');
+    expect(instance.getPath('data.updatedAt')).toEqual(dateString, 'convert a string ("' + dateString + '") to a string');
   });
 
   it('should create Boolean properties', function() {
@@ -169,6 +172,7 @@ describe('schema definition', function() {
     });
     var data = {'public': true, active: false, good: 'true', bad: 'false'};
     var instance = Model.create(data);
+    data = instance.get('data');
 
     expect(instance.get('public')).toBe(true);
     expect(instance.get('active')).toBe(false);
@@ -176,15 +180,15 @@ describe('schema definition', function() {
     expect(instance.get('bad')).toBe(false);
 
     instance.set('public', 'true');
-    expect(data['public']).toBe(true, "convert 'true' to true");
+    expect(instance.getPath('data.public')).toBe(true, "convert 'true' to true");
 
     instance.set('public', 'false');
-    expect(data['public']).toBe(false, "convert 'false' to false");
+    expect(instance.getPath('data.public')).toBe(false, "convert 'false' to false");
 
     instance.set('public', true);
-    expect(data['public']).toBe(true, "convert true to true");
+    expect(instance.getPath('data.public')).toBe(true, "convert true to true");
 
     instance.set('public', false);
-    expect(data['public']).toBe(false, "convert false to false");
+    expect(instance.getPath('data.public')).toBe(false, "convert false to false");
   });
 });
