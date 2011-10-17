@@ -35,7 +35,7 @@ describe('associations', function() {
         }
       });
 
-      var instance = Person.create(data);
+      var instance = Person.create({}, data);
       var address  = instance.get('address');
 
       expect(address instanceof Address).toBe(true);
@@ -58,7 +58,7 @@ describe('associations', function() {
       data.addresses = { home: data.address };
       delete data.address;
 
-      var instance = Person.create(data);
+      var instance = Person.create({}, data);
       var address  = instance.get('address');
 
       debugger
@@ -82,7 +82,7 @@ describe('associations', function() {
 
       data.address.id = '1';
 
-      var instance = Person.create(data);
+      var instance = Person.create({}, data);
       data = instance.get('data');
       var address  = instance.get('address');
 
@@ -178,7 +178,7 @@ describe('associations', function() {
           ]
         };
 
-        var person = Person.create(data);
+        var person = Person.create({}, data);
         var homeAddresses = person.get('home_addresses');
 
         expect(homeAddresses).toBeDefined();
@@ -213,7 +213,7 @@ describe('associations', function() {
           ]
         };
 
-        var person = Person.create(data),
+        var person = Person.create({}, data),
             address = person.get('home_addresses').objectAt(0);
 
         expect(address).toBeTruthy();
@@ -241,7 +241,7 @@ describe('associations', function() {
           home_address_ids: [1, 2]
         };
 
-        var person    = Person.create(data),
+        var person    = Person.create({}, data),
             addresses = person.get('home_addresses');
 
         expect(addresses.get('length')).toBe(2);

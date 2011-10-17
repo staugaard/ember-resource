@@ -14,6 +14,45 @@
 
   SC.Resource = SC.Object.extend({});
 
+  SC.Resource.deepSet = function(obj, path, value) {
+    if (SC.typeOf(path) === 'string') {
+      SC.Resource.deepSet(obj, path.split('.'), value);
+      return
+    }
+
+    var key = path.shift();
+
+    if (path.length === 0) {
+      SC.set(obj, key, value);
+    } else {
+      var newObj = SC.get(obj, key);
+
+      if (newObj === null || newObj === undefined) {
+        newObj = {};
+        SC.set(obj, key, newObj);
+      }
+
+      SC.Resource.deepSet(newObj, path, value);
+    }
+  };
+
+  SC.Resource.deepMerge = function(objA, objB) {
+    var oldValue, newValue;
+
+    for (var key in objB) {
+      if (objB.hasOwnProperty(key)) {
+        oldValue = SC.get(objA, key);
+        newValue = SC.get(objB, key);
+
+        if (SC.typeOf(newValue) === 'object' && SC.typeOf(oldValue) === 'object') {
+          SC.Resource.deepMerge(oldValue, newValue);
+        } else {
+          SC.set(objA, key, newValue);
+        }
+      }
+    }
+  };
+
   SC.Resource.AbstractSchemaItem = SC.Object.extend({
     name: SC.required(String),
     fetchable: SC.required(Boolean),
@@ -106,7 +145,7 @@
       if (value !== null && value !== undefined && SC.typeOf(value.toJSON) == 'function') {
         value = value.toJSON();
       }
-      SC.setPath(data, this.get('path'), value);
+      SC.Resource.deepSet(data, this.get('path'), value);
     }
   });
 
@@ -212,7 +251,7 @@
       var data = this.data(instance);
       if (!data) return;
       var value = SC.getPath(data, this.get('path'));
-      return this.get('type').create(value);
+      return this.get('type').create({}, value);
     },
 
     setValue: function(instance, value) {
@@ -223,7 +262,7 @@
         value = SC.get(value, 'data');
       }
 
-      SC.setPath(data, this.get('path'), value);
+      SC.Resource.deepSet(data, this.get('path'), value);
     }
   });
   SC.Resource.HasOneNestedSchemaItem.reopenClass({
@@ -268,14 +307,14 @@
       if (!data) return;
       var id = SC.getPath(data, this.get('path'));
       if (id) {
-        return this.get('type').create({id: id});
+        return this.get('type').create({}, {id: id});
       }
     },
 
     setValue: function(instance, value) {
       var data = this.data(instance);
       if (!data) return;
-      SC.setPath(data, this.get('path'), value.get('id'));
+      SC.Resource.deepSet(data, this.get('path'), value.get('id'));
     }
   });
   SC.Resource.HasOneRemoteSchemaItem.reopenClass({
@@ -485,13 +524,16 @@
     classMixin: SC.Mixin.create({
       expireIn: 60 * 5,
 
-      create: function(options) {
+      create: function(options, data) {
         options = options || {};
         options.resourceState = SC.Resource.Lifecycle.INITIALIZING;
-        var instance = this._super.call(this, options);
+
+        var instance = this._super.apply(this, arguments);
+
         if (SC.get(instance, 'resourceState') === SC.Resource.Lifecycle.INITIALIZING) {
           SC.set(instance, 'resourceState', SC.Resource.Lifecycle.UNFETCHED);
         }
+
         return instance;
       }
     }),
@@ -568,7 +610,7 @@
     isSCResource: true,
 
     updateWithApiData: function(json) {
-      this.setProperties(this.constructor.parse(json));
+      SC.Resource.deepMerge(this.get('data'), this.constructor.parse(json));
     },
 
     fetch: function() {
@@ -710,60 +752,36 @@
       return this;
     },
 
-    extractNonSchemaProperties: function(attrs) {
-      var ret = {}, schemaKeys = [], path, key;
-
-      for(key in this.schema) {
-        path = this.schema[key].get('path');
-
-        if (path) {
-          schemaKeys.push(path.split('.')[0]);
-        } else {
-          schemaKeys.push(key);
-        }
-      }
-
-      for(key in attrs) {
-        if(!attrs.hasOwnProperty(key)) {
-          continue;
-        }
-
-        if(!schemaKeys.contains(key)) {
-          ret[key] = attrs[key];
-        }
-      }
-
-      return ret;
-    },
-
     // Create an instance of this resource. If `options` includes an
     // `id`, first check the identity map and return the existing resource
     // with that ID if found.
-    create: function(options) {
-      var klass = this.subclassFor(options);
+    create: function(options, data) {
+      data    = data    || {};
+      options = options || {};
+
+      var klass = this.subclassFor(data);
 
       if (klass === this) {
         var instance;
         this.identityMap = this.identityMap || {};
-        if (options && options.id && !options.skipIdentityMap) {
-          var id = options.id.toString();
+
+        if (data.id && !options.skipIdentityMap) {
+          var id = data.id.toString();
           instance = this.identityMap[id];
+
           if (!instance) {
-            this.identityMap[id] = instance = this._super.call(this);
-            SC.set(instance, 'data', options);
-            instance.setProperties(this.extractNonSchemaProperties(options));
-          } else {
-            instance.setProperties(options);
+            this.identityMap[id] = instance = this._super.call(this, { data: data });
           }
         } else {
-          delete options.skipIdentityMap;
-          instance = this._super.call(this);
-          SC.set(instance, 'data', options);
-          instance.setProperties(this.extractNonSchemaProperties(options));
+          instance = this._super.call(this, { data: data });
         }
+
+        delete options.data;
+        instance.setProperties(options);
+
         return instance;
       } else {
-        return klass.create(options);
+        return klass.create(options, data);
       }
     },
 
@@ -872,7 +890,7 @@
         if (item instanceof this.type) {
           return item;
         } else {
-          return this.type.create(item);
+          return this.type.create({}, item);
         }
       }, this);
     },

@@ -100,7 +100,7 @@ describe('schema definition', function() {
       }
     });
     var data = {id: 1, size: '5'};
-    var instance = Model.create(data);
+    var instance = Model.create({}, data);
     data = instance.get('data');
 
     expect(instance.get('id')).toBe(1);
@@ -121,7 +121,7 @@ describe('schema definition', function() {
       }
     });
     var data = {id: 1, size: 'large'};
-    var instance = Model.create(data);
+    var instance = Model.create({}, data);
     data = instance.get('data');
 
     expect(instance.get('id')).toBe('1');
@@ -145,7 +145,7 @@ describe('schema definition', function() {
       }
     });
     var data = {createdAt: dateString, updatedAt: date};
-    var instance = Model.create(data);
+    var instance = Model.create({}, data);
     data = instance.get('data');
 
     expect(instance.get('createdAt')).toEqual(date);
@@ -171,7 +171,7 @@ describe('schema definition', function() {
       }
     });
     var data = {'public': true, active: false, good: 'true', bad: 'false'};
-    var instance = Model.create(data);
+    var instance = Model.create({}, data);
     data = instance.get('data');
 
     expect(instance.get('public')).toBe(true);
