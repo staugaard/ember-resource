@@ -765,8 +765,9 @@
         var instance;
         this.identityMap = this.identityMap || {};
 
-        if (data.id && !options.skipIdentityMap) {
-          var id = data.id.toString();
+        var id = data.id || options.id;
+        if (id && !options.skipIdentityMap) {
+          id = id.toString();
           instance = this.identityMap[id];
 
           if (!instance) {
