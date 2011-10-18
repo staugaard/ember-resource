@@ -763,7 +763,7 @@
       }
     },
 
-    subclassFor: function(attributes) {
+    subclassFor: function(options, data) {
       return this;
     },
 
@@ -774,7 +774,7 @@
       data    = data    || {};
       options = options || {};
 
-      var klass = this.subclassFor(data);
+      var klass = this.subclassFor(options, data);
 
       if (klass === this) {
         var instance;
