@@ -258,7 +258,9 @@
       else {
         var instance = this._super.apply(this, arguments);
         instance.set('theType', definition.type);
-        instance.set('parse', definition.parse || definition.type.parse);
+        if (definition.parse) {
+          instance.set('parse', definition.parse);
+        }
         return instance;
       }
     }
@@ -271,7 +273,7 @@
       var type = this.get('type');
       var value = SC.getPath(data, this.get('path'));
       if (value) {
-        value = this.get('parse').call(type, SC.copy(value));
+        value = (this.get('parse') || type.parse).call(type, SC.copy(value));
       }
       return type.create({}, value);
     },
@@ -385,7 +387,9 @@
         var instance = this._super.apply(this, arguments);
         instance.set('theType', definition.type);
         instance.set('theItemType', definition.itemType);
-        instance.set('parse', definition.parse || definition.type.parse);
+        if (definition.parse) {
+          instance.set('parse', definition.parse);
+        }
         return instance;
       }
     }
