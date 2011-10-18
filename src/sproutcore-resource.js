@@ -274,8 +274,9 @@
       var value = SC.getPath(data, this.get('path'));
       if (value) {
         value = (this.get('parse') || type.parse).call(type, SC.copy(value));
+        return type.create({}, value);
       }
-      return type.create({}, value);
+      return value;
     },
 
     setValue: function(instance, value) {
@@ -637,7 +638,10 @@
     isSCResource: true,
 
     updateWithApiData: function(json) {
-      SC.Resource.deepMerge(this.get('data'), this.constructor.parse(json));
+      var data = this.get('data');
+      SC.beginPropertyChanges(data);
+      SC.Resource.deepMerge(data, this.constructor.parse(json));
+      SC.endPropertyChanges(data);
     },
 
     fetch: function() {
@@ -783,6 +787,8 @@
 
           if (!instance) {
             this.identityMap[id] = instance = this._super.call(this, { data: data });
+          } else {
+            instance.updateWithApiData(data);
           }
         } else {
           instance = this._super.call(this, { data: data });
