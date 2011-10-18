@@ -17,7 +17,7 @@
   SC.Resource.deepSet = function(obj, path, value) {
     if (SC.typeOf(path) === 'string') {
       SC.Resource.deepSet(obj, path.split('.'), value);
-      return
+      return;
     }
 
     var key = path.shift();
@@ -78,7 +78,25 @@
         }
       }
       return type;
-    }.property('theType')
+    }.property('theType'),
+
+    propertyFunction: function(name, value) {
+      var schemaItem = this.constructor.schema[name];
+      if (arguments.length === 2) {
+        schemaItem.setValue.call(schemaItem, this, value);
+        value = schemaItem.getValue.call(schemaItem, this);
+      } else {
+        value = schemaItem.getValue.call(schemaItem, this);
+        if ((value === undefined || SC.get(this, 'isExpired')) && schemaItem.get('fetchable')) {
+          this.scheduleFetch();
+        }
+      }
+      return value;
+    },
+
+    property: function() {
+      return this.propertyFunction.property.apply(this.propertyFunction, this.get('dependencies')).cacheable();
+    }
   });
   SC.Resource.AbstractSchemaItem.reopenClass({
     create: function(name, schema) {
@@ -250,8 +268,12 @@
     getValue: function(instance) {
       var data = this.data(instance);
       if (!data) return;
+      var type = this.get('type');
       var value = SC.getPath(data, this.get('path'));
-      return this.get('type').create({}, value);
+      if (value) {
+        value = this.get('parse').call(type, SC.copy(value));
+      }
+      return type.create({}, value);
     },
 
     setValue: function(instance, value) {
@@ -420,6 +442,7 @@
       if (!data) return;
       data = SC.getPath(data, this.get('path'));
       if (data === undefined || data === null) return data;
+      data = SC.copy(data);
 
       var options = {
         type: this.get('itemType'),
@@ -713,23 +736,7 @@
 
     for (var propertyName in schema) {
       if (schema.hasOwnProperty(propertyName)) {
-
-        var f = function(name, value) {
-          var schemaItem = this.constructor.schema[name];
-          if (arguments.length === 2) {
-            schemaItem.setValue.call(schemaItem, this, value);
-            value = schemaItem.getValue.call(schemaItem, this);
-          } else {
-            value = schemaItem.getValue.call(schemaItem, this);
-            if ((value === undefined || SC.get(this, 'isExpired')) && schemaItem.get('fetchable')) {
-              this.scheduleFetch();
-            }
-          }
-          return value;
-        };
-
-        f = f.property.apply(f, schema[propertyName].get('dependencies')).cacheable();
-        properties[propertyName] = f;
+        properties[propertyName] = schema[propertyName].property();
       }
     }
 
