@@ -549,6 +549,18 @@
     DESTOYING:    60,
     DESTROYED:    70,
 
+    clock: SC.Object.create({
+      now: new Date(),
+
+      tick: function() {
+        SC.Resource.Lifecycle.clock.set('now', new Date());
+      },
+
+      start: function() {
+        SC.Resource.Lifecycle.clock.set('timer', setInterval(SC.Resource.Lifecycle.clock.tick, 10000));
+      }
+    }),
+
     classMixin: SC.Mixin.create({
       expireIn: 60 * 5,
 
@@ -613,6 +625,7 @@
       expire: function() {
         SC.run.next(this, function() {
           SC.set(this, 'expireAt', new Date());
+          SC.Resource.Lifecycle.clock.tick();
         });
       },
 
@@ -622,7 +635,8 @@
 
         var expireAt = SC.get(this, 'expireAt');
         if (expireAt) {
-          isExpired = expireAt.getTime() <= (new Date()).getTime();
+          var now = SC.Resource.Lifecycle.clock.get('now');
+          isExpired = expireAt.getTime() <= now.getTime();
         }
 
         if (isExpired) {
@@ -630,9 +644,10 @@
         }
 
         return isExpired;
-      }.property('expireAt')
+      }.property('expireAt', 'SC.Resource.Lifecycle.clock.now').cacheable()
     })
   };
+  SC.Resource.Lifecycle.clock.start();
 
   SC.Resource.reopen({
     isSCResource: true,

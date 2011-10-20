@@ -79,6 +79,7 @@ describe('Lifecycle', function() {
 
     beforeEach(function() {
       person = Person.create({id: 1});
+      SC.Resource.Lifecycle.clock.tick();
     });
 
     it('should be expired with an expireAt in the past', function() {

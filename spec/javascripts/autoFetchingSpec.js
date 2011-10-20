@@ -11,6 +11,7 @@ describe('Auto fetching', function() {
     });
 
     server = sinon.fakeServer.create();
+    SC.Resource.Lifecycle.clock.tick();
   });
 
   afterEach(function() {
