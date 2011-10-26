@@ -201,6 +201,10 @@
   SC.Resource.NumberAttributeSchemaItem = SC.Resource.AttributeSchemaItem.extend({
     theType: Number,
     typeCast: function(value) {
+      if (isNaN(value)) {
+        value = undefined;
+      }
+
       if (value === undefined || value === null || SC.typeOf(value) === 'number') {
         return value;
       } else {

@@ -111,6 +111,14 @@ describe('schema definition', function() {
 
     instance.set('size', 3);
     expect(instance.getPath('data.size')).toBe(3);
+
+    instance.set('size', 'foo');
+    expect(instance.get('size')).toBeUndefined();
+    expect(instance.getPath('data.size')).toBeUndefined();
+
+    instance.set('size', NaN);
+    expect(instance.get('size')).toBeUndefined();
+    expect(instance.getPath('data.size')).toBeUndefined();
   });
 
   it('should create String properties', function() {
