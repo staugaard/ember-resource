@@ -875,7 +875,7 @@
       } else {
         if (instance) {
           var id = SC.get(instance, 'id');
-          if (id) {
+          if (id && (SC.typeOf(id) !== 'number' || id > 0)) {
             return this.url + '/' + id;
           }
         } else {

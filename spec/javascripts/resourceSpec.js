@@ -7,8 +7,7 @@ describe('A Resource instance', function() {
         id:       Number,
         name:     String,
         subject:  String
-      }
-    }).extend({
+      },
       url: '/people'
     });
 
@@ -35,6 +34,16 @@ describe('A Resource instance', function() {
 
   });
 
+  describe('with a negative ID', function() {
+    beforeEach(function() {
+      model = Model.create({id: -1});
+    });
+
+    it('should not have a URL', function() {
+      expect(model.resourceURL()).toBeUndefined();
+    })
+  });
+
   it('allows setting of properties not in the schema during creation', function() {
     model = Model.create({ undefinedProperty: 'foo' });
     expect(model.get('undefinedProperty')).toEqual('foo');
@@ -47,8 +56,7 @@ describe('A Resource instance', function() {
         id:       Number,
         name:     String,
         foo:      {type: String, path: 'data.foo'}
-      }
-    }).extend({
+      },
       url: '/people'
     });
 
