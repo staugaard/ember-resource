@@ -581,7 +581,7 @@
     }),
 
     prototypeMixin: SC.Mixin.create({
-      expireIn: 60 * 5,
+      expireIn: 60,// * 5,
       resourceState: 0,
 
       init: function() {
@@ -632,8 +632,8 @@
         });
       },
 
-      isExpired: function() {
-        var isExpired = this.get('resourceState') === SC.Resource.Lifecycle.EXPIRED;
+      updateIsExpired: function() {
+        var isExpired = SC.get(this, 'resourceState') === SC.Resource.Lifecycle.EXPIRED;
         if (isExpired) return true;
 
         var expireAt = SC.get(this, 'expireAt');
@@ -642,12 +642,17 @@
           isExpired = expireAt.getTime() <= now.getTime();
         }
 
-        if (isExpired) {
+        if (isExpired !== SC.get(this, 'isExpired')) {
+          SC.set(this, 'isExpired', isExpired);
+        }
+      }.observes('SC.Resource.Lifecycle.clock.now', 'expireAt', 'resourceState'),
+
+      isExpired: function(name, value) {
+        if (value) {
           SC.set(this, 'resourceState', SC.Resource.Lifecycle.EXPIRED);
         }
-
-        return isExpired;
-      }.property('expireAt', 'SC.Resource.Lifecycle.clock.now').cacheable()
+        return value;
+      }.property().cacheable()
     })
   };
   SC.Resource.Lifecycle.clock.start();
