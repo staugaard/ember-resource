@@ -667,6 +667,9 @@
       SC.endPropertyChanges(data);
     },
 
+    willFetch: function() {},
+    didFetch: function() {},
+
     fetch: function() {
       if (!SC.get(this, 'isFetchable')) return null;
 
@@ -678,6 +681,7 @@
 
       if (this.deferedFetch && !SC.get(this, 'isExpired')) return this.deferedFetch;
 
+      self.willFetch.call(self);
       SC.sendEvent(self, 'willFetch');
 
       this.deferedFetch = SC.Resource.ajax({
@@ -688,6 +692,7 @@
       });
 
       this.deferedFetch.always(function() {
+        self.didFetch.call(self);
         SC.sendEvent(self, 'didFetch');
       });
 
@@ -954,7 +959,13 @@
       if (arguments.length === 2) { // setter
         return this.instantiateItems(value);
       }
-    }.property().cacheable()
+    }.property().cacheable(),
+
+    autoFetchOnExpiry: function() {
+      if (this.get('isExpired') && this.get('hasArrayObservers')) {
+        this.fetch();
+      }
+    }.observes('isExpired', 'hasArrayObservers')
   }, SC.Resource.Lifecycle.prototypeMixin);
 
   SC.ResourceCollection.reopenClass({
