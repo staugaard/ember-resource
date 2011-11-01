@@ -566,8 +566,6 @@
     }),
 
     classMixin: SC.Mixin.create({
-      expireIn: 60 * 5,
-
       create: function(options, data) {
         options = options || {};
         options.resourceState = SC.Resource.Lifecycle.INITIALIZING;
@@ -583,6 +581,7 @@
     }),
 
     prototypeMixin: SC.Mixin.create({
+      expireIn: 60 * 5,
       resourceState: 0,
 
       init: function() {
@@ -592,7 +591,7 @@
 
         var updateExpiry = function() {
           var expireAt = new Date();
-          expireAt.setSeconds(expireAt.getSeconds() + self.constructor.expireIn);
+          expireAt.setSeconds(expireAt.getSeconds() + self.get('expireIn'));
           SC.set(self, 'expireAt', expireAt);
         };
 
