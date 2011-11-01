@@ -872,7 +872,7 @@
     resourceURL: function(instance) {
       if ($.isFunction(this.url)) {
         return this.url(instance);
-      } else {
+      } else if (this.url) {
         if (instance) {
           var id = SC.get(instance, 'id');
           if (id && (SC.typeOf(id) !== 'number' || id > 0)) {
