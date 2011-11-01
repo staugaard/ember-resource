@@ -60,7 +60,7 @@
     setValue: SC.required(Function),
 
     dependencies: function() {
-      return ['data.' + this.get('path')];
+      return ['data.' + this.get('path'), 'isExpired'];
     }.property('path'),
 
     data: function(instance) {
