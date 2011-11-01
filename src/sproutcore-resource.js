@@ -581,7 +581,7 @@
     }),
 
     prototypeMixin: SC.Mixin.create({
-      expireIn: 60,// * 5,
+      expireIn: 60 * 5,
       resourceState: 0,
 
       init: function() {
