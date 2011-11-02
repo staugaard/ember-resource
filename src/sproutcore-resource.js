@@ -10,8 +10,6 @@
     return obj === Object(obj);
   }
 
-  var isFunction = $.isFunction;
-
   SC.Resource = SC.Object.extend({});
 
   SC.Resource.deepSet = function(obj, path, value) {
@@ -759,13 +757,16 @@
     },
 
     destroy: function() {
-      var previousState = SC.get(this, 'resourceState');
+      var previousState = SC.get(this, 'resourceState'), self = this;
       SC.set(this, 'resourceState', SC.Resource.Lifecycle.DESTROYING);
       return SC.Resource.ajax({
         type: 'DELETE',
         url:  this.resourceURL()
-      }).done($.proxy(SC.set, SC, this, 'resourceState', SC.Resource.Lifecycle.DESTROYED))
-        .fail($.proxy(SC.set, SC, this, 'resourceState', previousState));
+      }).done(function() {
+        SC.set(self, 'resourceState', SC.Resource.Lifecycle.DESTROYED);
+      }).fail(function() {
+        SC.set(self, 'resourceState', previousState);
+      });
     }
   }, SC.Resource.Lifecycle.prototypeMixin);
 
@@ -907,7 +908,7 @@
     },
 
     resourceURL: function(instance) {
-      if ($.isFunction(this.url)) {
+      if (SC.typeOf(this.url) == 'function') {
         return this.url(instance);
       } else if (this.url) {
         if (instance) {
@@ -970,7 +971,7 @@
     },
     parse: function(json) {
       this._resolveType();
-      if (isFunction(this.type.parse)) {
+      if (SC.typeOf(this.type.parse) == 'function') {
         return json.map(this.type.parse);
       }
       else {
