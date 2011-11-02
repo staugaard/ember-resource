@@ -90,6 +90,36 @@ describe('A Resource instance', function() {
       SC.Resource.errorHandler = null;
     });
 
+    describe('saving', function() {
+      var resource;
+
+      beforeEach(function() {
+        server.respondWith('POST', '/people', [201, {}, '']);
+        resource = Model.create({ name: 'foo' });
+        expect(resource.get('resourceState')).not.toBe(SC.Resource.Lifecycle.SAVING);
+      });
+
+      it('should change to the saving state while saving', function() {
+        expect(resource.save()).toBeTruthy();
+        expect(resource.get('resourceState')).toBe(SC.Resource.Lifecycle.SAVING);
+      });
+
+      it('should change to previous state after save completes', function() {
+        var previousState = resource.get('resourceState');
+        expect(resource.save()).toBeTruthy();
+        expect(resource.get('resourceState')).not.toBe(previousState);
+        server.respond();
+        expect(resource.get('resourceState')).toBe(previousState);
+      });
+
+      it('should not allow concurrent saves', function() {
+        expect(resource.save()).toBeTruthy();
+        expect(resource.save()).toBe(false);
+        server.respond();
+        expect(resource.save()).toBeTruthy();
+      });
+    });
+
     describe('handling errors on save', function() {
       beforeEach(function() {
         server.respondWith('POST', '/people', [422, {}, '[["foo", "bar"]]']);

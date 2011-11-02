@@ -550,8 +550,9 @@
     EXPIRED:      30,
     FETCHING:     40,
     FETCHED:      50,
-    DESTOYING:    60,
-    DESTROYED:    70,
+    SAVING:       60,
+    DESTOYING:    70,
+    DESTROYED:    80,
 
     clock: SC.Object.create({
       now: new Date(),
@@ -603,6 +604,16 @@
         SC.addListener(this, 'didFetch', this, function() {
           SC.set(self, 'resourceState', SC.Resource.Lifecycle.FETCHED);
           updateExpiry();
+        });
+
+        var resourceStateBeforeSave;
+        SC.addListener(this, 'willSave', this, function() {
+          resourceStateBeforeSave = SC.get(self, 'resourceState');
+          SC.set(self, 'resourceState', SC.Resource.Lifecycle.SAVING);
+        });
+
+        SC.addListener(this, 'didSave', this, function() {
+          SC.set(self, 'resourceState', resourceStateBeforeSave || SC.Resource.Lifecycle.UNFETCHED);
         });
       },
 
@@ -669,6 +680,8 @@
 
     willFetch: function() {},
     didFetch: function() {},
+    willSave: function() {},
+    didSave: function() {},
 
     fetch: function() {
       if (!SC.get(this, 'isFetchable')) return null;
@@ -714,6 +727,8 @@
     }.property('id').cacheable(),
 
     save: function() {
+      if (this.deferedSave) return false;
+
       var ajaxOptions = {
         data: this.toJSON(),
         resource: this
@@ -727,7 +742,20 @@
         ajaxOptions.url = this.resourceURL();
       }
 
-      return SC.Resource.ajax(ajaxOptions);
+      var self = this;
+
+      self.willSave.call(self);
+      SC.sendEvent(self, 'willSave');
+
+      this.deferedSave = SC.Resource.ajax(ajaxOptions);
+
+      this.deferedSave.always(function() {
+        self.deferedSave = null;
+        self.didSave.call(self);
+        SC.sendEvent(self, 'didSave');
+      });
+
+      return this.deferedSave;
     },
 
     destroy: function() {
