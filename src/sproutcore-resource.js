@@ -632,7 +632,7 @@
         var state = SC.get(this, 'resourceState');
         var unsavableState = [
           SC.Resource.Lifecycle.INITIALIZING,
-          SC.Resource.Lifecycle.FETCHED,
+          SC.Resource.Lifecycle.FETCHING,
           SC.Resource.Lifecycle.SAVING,
           SC.Resource.Lifecycle.DESTOYING
         ];
