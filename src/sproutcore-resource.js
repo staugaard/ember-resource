@@ -759,6 +759,20 @@
 
       var deferedSave = SC.Resource.ajax(ajaxOptions);
 
+      deferedSave.done(function(data, status, response) {
+        var location = response.getResponseHeader('Location');
+        if (location) {
+          var id = self.constructor.idFromURL(location);
+          if (id) {
+            self.set('id', id);
+          }
+        }
+
+        if (SC.typeOf(data) === 'object') {
+          self.updateWithApiData(data);
+        }
+      });
+
       deferedSave.always(function() {
         self.didSave.call(self);
         SC.sendEvent(self, 'didSave');
@@ -930,6 +944,22 @@
         } else {
           return this.url;
         }
+      }
+    },
+
+    idFromURL: function(url) {
+      var regex;
+      if (!this.schema.id) return;
+
+      if (this.schema.id.get('type') === Number) {
+        regex = /\/(\d+)(\.\w+)?$/;
+      } else {
+        regex = /\/([^\/\.]+)(\.\w+)?$/;
+      }
+
+      var match = (url || '').match(regex);
+      if (match) {
+        return match[1];
       }
     }
   }, SC.Resource.Lifecycle.classMixin);
