@@ -628,6 +628,18 @@
         return (SC.get(this, 'resourceState')) === SC.Resource.Lifecycle.FETCHING;
       }.property('resourceState').cacheable(),
 
+      isSavable: function() {
+        var state = SC.get(this, 'resourceState');
+        var unsavableState = [
+          SC.Resource.Lifecycle.INITIALIZING,
+          SC.Resource.Lifecycle.FETCHED,
+          SC.Resource.Lifecycle.SAVING,
+          SC.Resource.Lifecycle.DESTOYING
+        ];
+
+        return state && !unsavableState.contains(state);
+      }.property('resourceState').cacheable(),
+
       scheduleFetch: function() {
         if (SC.get(this, 'isFetchable')) {
           SC.run.next(this, this.fetch);
@@ -725,7 +737,7 @@
     }.property('id').cacheable(),
 
     save: function() {
-      if (this.deferedSave) return false;
+      if (!this.get('isSavable')) return false;
 
       var ajaxOptions = {
         data: this.toJSON(),
@@ -745,15 +757,14 @@
       self.willSave.call(self);
       SC.sendEvent(self, 'willSave');
 
-      this.deferedSave = SC.Resource.ajax(ajaxOptions);
+      var deferedSave = SC.Resource.ajax(ajaxOptions);
 
-      this.deferedSave.always(function() {
-        self.deferedSave = null;
+      deferedSave.always(function() {
         self.didSave.call(self);
         SC.sendEvent(self, 'didSave');
       });
 
-      return this.deferedSave;
+      return deferedSave;
     },
 
     destroy: function() {
