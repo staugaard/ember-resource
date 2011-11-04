@@ -592,7 +592,7 @@
 
         var updateExpiry = function() {
           var expireAt = new Date();
-          expireAt.setSeconds(expireAt.getSeconds() + self.get('expireIn'));
+          expireAt.setSeconds(expireAt.getSeconds() + SC.get(self, 'expireIn'));
           SC.set(self, 'expireAt', expireAt);
         };
 
@@ -684,7 +684,7 @@
     isSCResource: true,
 
     updateWithApiData: function(json) {
-      var data = this.get('data');
+      var data = SC.get(this, 'data');
       SC.beginPropertyChanges(data);
       SC.Resource.deepMerge(data, this.constructor.parse(json));
       SC.endPropertyChanges(data);
@@ -739,7 +739,7 @@
     }.property('id').cacheable(),
 
     save: function() {
-      if (!this.get('isSavable')) return false;
+      if (!SC.get(this, 'isSavable')) return false;
 
       var ajaxOptions = {
         data: this.toJSON(),
@@ -766,7 +766,7 @@
         if (location) {
           var id = self.constructor.idFromURL(location);
           if (id) {
-            self.set('id', id);
+            SC.set(self, 'id', id);
           }
         }
 
@@ -1024,7 +1024,7 @@
     length: function() {
       var content = SC.get(this, 'content');
       var length = content ? SC.get(content, 'length') : 0;
-      if (length === 0 ||  this.get('isExpired'))  this.scheduleFetch();
+      if (length === 0 ||  SC.get(this, 'isExpired'))  this.scheduleFetch();
       return length;
     }.property('content.length', 'resourceState', 'isExpired').cacheable(),
     content: function(name, value) {
@@ -1034,7 +1034,7 @@
     }.property().cacheable(),
 
     autoFetchOnExpiry: function() {
-      if (this.get('isExpired') && this.get('hasArrayObservers')) {
+      if (SC.get(this, 'isExpired') && SC.get(this, 'hasArrayObservers')) {
         this.fetch();
       }
     }.observes('isExpired', 'hasArrayObservers')
