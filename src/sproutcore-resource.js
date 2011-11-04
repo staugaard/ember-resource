@@ -562,7 +562,15 @@
       },
 
       start: function() {
+        this.stop();
         SC.Resource.Lifecycle.clock.set('timer', setInterval(SC.Resource.Lifecycle.clock.tick, 10000));
+      },
+
+      stop: function() {
+        var timer = SC.Resource.Lifecycle.clock.get('timer');
+        if (timer) {
+          clearInterval(timer);
+        }
       }
     }),
 
