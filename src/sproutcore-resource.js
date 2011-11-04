@@ -134,6 +134,7 @@
   });
 
   SC.Resource.AttributeSchemaItem = SC.Resource.AbstractSchemaItem.extend({
+    fetchable: true,
     theType: Object,
     path: SC.required(String),
 
@@ -341,7 +342,8 @@
     setValue: function(instance, value) {
       var data = this.data(instance);
       if (!data) return;
-      SC.Resource.deepSet(data, this.get('path'), value.get('id'));
+      var id = SC.get(value || {}, 'id');
+      SC.Resource.deepSet(data, this.get('path'), id);
     }
   });
   SC.Resource.HasOneRemoteSchemaItem.reopenClass({
