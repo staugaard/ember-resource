@@ -103,6 +103,18 @@ window.sc_assert = function sc_assert(desc, test) {
 //if ('undefined' === typeof sc_require) sc_require = SC.K;
 if ('undefined' === typeof require) require = SC.K;
 
+// ..........................................................
+// LOGGER
+// 
+
+/**
+  @class
+
+  Inside SproutCore-Metal, simply uses the window.console object.
+  Override this to provide more robust logging functionality.
+*/
+SC.Logger = window.console;
+
 })({});
 
 
@@ -1019,6 +1031,216 @@ require('sproutcore-metal/platform');
 require('sproutcore-metal/utils');
 require('sproutcore-metal/accessors');
 
+var AFTER_OBSERVERS = ':change';
+var BEFORE_OBSERVERS = ':before';
+var guidFor = SC.guidFor;
+var normalizePath = SC.normalizePath;
+
+var suspended = 0;
+var array_Slice = Array.prototype.slice;
+
+var ObserverSet = function(iterateable) {
+  this.set = {};
+  if (iterateable) { this.array = []; }
+}
+
+ObserverSet.prototype.add = function(target, name) {
+  var set = this.set, guid = SC.guidFor(target), array;
+
+  if (!set[guid]) { set[guid] = {}; }
+  set[guid][name] = true;
+  if (array = this.array) {
+    array.push([target, name]);
+  }
+};
+
+ObserverSet.prototype.contains = function(target, name) {
+  var set = this.set, guid = SC.guidFor(target), nameSet = set[guid];
+  return nameSet && nameSet[name];
+};
+
+ObserverSet.prototype.empty = function() {
+  this.set = {};
+  this.array = [];
+};
+
+ObserverSet.prototype.forEach = function(fn) {
+  var q = this.array;
+  this.empty();
+  q.forEach(function(item) {
+    fn(item[0], item[1]);
+  });
+};
+
+var queue = new ObserverSet(true), beforeObserverSet = new ObserverSet();
+
+function notifyObservers(obj, eventName, forceNotification) {
+  if (suspended && !forceNotification) {
+
+    // if suspended add to the queue to send event later - but only send 
+    // event once.
+    if (!queue.contains(obj, eventName)) {
+      queue.add(obj, eventName);
+    }
+
+  } else {
+    SC.sendEvent(obj, eventName);
+  }
+}
+
+function flushObserverQueue() {
+  beforeObserverSet.empty();
+
+  if (!queue || queue.array.length===0) return ;
+  queue.forEach(function(target, event){ SC.sendEvent(target, event); });
+}
+
+SC.beginPropertyChanges = function() {
+  suspended++;
+  return this;
+};
+
+SC.endPropertyChanges = function() {
+  suspended--;
+  if (suspended<=0) flushObserverQueue();
+};
+
+/**
+  Make a series of property changes together in an
+  exception-safe way.
+
+      SC.changeProperties(function() {
+        obj1.set('foo', mayBlowUpWhenSet);
+        obj2.set('bar', baz);
+      });
+*/
+SC.changeProperties = function(cb){
+  SC.beginPropertyChanges();
+  try {
+    cb()
+  } finally {
+    SC.endPropertyChanges();
+  }
+}
+
+function changeEvent(keyName) {
+  return keyName+AFTER_OBSERVERS;
+}
+
+function beforeEvent(keyName) {
+  return keyName+BEFORE_OBSERVERS;
+}
+
+function changeKey(eventName) {
+  return eventName.slice(0, -7);
+}
+
+function beforeKey(eventName) {
+  return eventName.slice(0, -7);
+}
+
+function xformForArgs(args) {
+  return function (target, method, params) {
+    var obj = params[0], keyName = changeKey(params[1]), val;
+    var copy_args = args.slice();
+    if (method.length>2) val = SC.getPath(obj, keyName);
+    copy_args.unshift(obj, keyName, val);
+    method.apply(target, copy_args);
+  }
+}
+
+var xformChange = xformForArgs([]);
+
+function xformBefore(target, method, params) {
+  var obj = params[0], keyName = beforeKey(params[1]), val;
+  if (method.length>2) val = SC.getPath(obj, keyName);
+  method.call(target, obj, keyName, val);
+}
+
+SC.addObserver = function(obj, path, target, method) {
+  path = normalizePath(path);
+
+  var xform;
+  if (arguments.length > 4) {
+    var args = array_Slice.call(arguments, 4);
+    xform = xformForArgs(args);
+  } else {
+    xform = xformChange;
+  }
+  SC.addListener(obj, changeEvent(path), target, method, xform);
+  SC.watch(obj, path);
+  return this;
+};
+
+/** @private */
+SC.observersFor = function(obj, path) {
+  return SC.listenersFor(obj, changeEvent(path));
+};
+
+SC.removeObserver = function(obj, path, target, method) {
+  path = normalizePath(path);
+  SC.unwatch(obj, path);
+  SC.removeListener(obj, changeEvent(path), target, method);
+  return this;
+};
+
+SC.addBeforeObserver = function(obj, path, target, method) {
+  path = normalizePath(path);
+  SC.addListener(obj, beforeEvent(path), target, method, xformBefore);
+  SC.watch(obj, path);
+  return this;
+};
+
+/** @private */
+SC.beforeObserversFor = function(obj, path) {
+  return SC.listenersFor(obj, beforeEvent(path));
+};
+
+SC.removeBeforeObserver = function(obj, path, target, method) {
+  path = normalizePath(path);
+  SC.unwatch(obj, path);
+  SC.removeListener(obj, beforeEvent(path), target, method);
+  return this;
+};
+
+/** @private */
+SC.notifyObservers = function(obj, keyName) {
+  notifyObservers(obj, changeEvent(keyName));
+};
+
+/** @private */
+SC.notifyBeforeObservers = function(obj, keyName) {
+  var guid, set, forceNotification = false;
+
+  if (suspended) {
+    if (!beforeObserverSet.contains(obj, keyName)) {
+      beforeObserverSet.add(obj, keyName);
+      forceNotification = true;
+    } else {
+      return;
+    }
+  }
+
+  notifyObservers(obj, beforeEvent(keyName), forceNotification);
+};
+
+
+})({});
+
+
+(function(exports) {
+// ==========================================================================
+// Project:  SproutCore Metal
+// Copyright: ©2011 Strobe Inc. and contributors.
+// License:   Licensed under MIT license (see license.js)
+// ==========================================================================
+/*globals sc_assert */
+
+require('sproutcore-metal/core');
+require('sproutcore-metal/platform');
+require('sproutcore-metal/utils');
+require('sproutcore-metal/accessors');
+
 var USE_ACCESSORS = SC.USE_ACCESSORS;
 var GUID_KEY = SC.GUID_KEY;
 var META_KEY = SC.META_KEY;
@@ -1148,16 +1370,26 @@ Dp.val = function(obj, keyName) {
 // testing on browsers that do support accessors.  It will throw an exception
 // if you do foo.bar instead of SC.get(foo, 'bar')
 
+// The exception to this is that any objects managed by SC but not a descendant
+// of SC.Object will not throw an exception, instead failing silently. This
+// prevent errors with other libraries that may attempt to access special
+// properties on standard objects like Array. Usually this happens when copying
+// an object by looping over all properties.
+
 if (!USE_ACCESSORS) {
   SC.Descriptor.MUST_USE_GETTER = function() {
-    sc_assert('Must use SC.get() to access this property', false);
+    if (this instanceof SC.Object) {
+      sc_assert('Must use SC.get() to access this property', false);
+    }
   };
 
   SC.Descriptor.MUST_USE_SETTER = function() {
-    if (this.isDestroyed) {
-      sc_assert('You cannot set observed properties on destroyed objects', false);
-    } else {
-      sc_assert('Must use SC.set() to access this property', false);
+    if (this instanceof SC.Object) {
+      if (this.isDestroyed) {
+        sc_assert('You cannot set observed properties on destroyed objects', false);
+      } else {
+        sc_assert('Must use SC.set() to access this property', false);
+      }
     }
   };
 }
@@ -1411,704 +1643,6 @@ SC.createPrototype = function(obj, props) {
 */
 SC.destroy = function(obj) {
   if (obj[META_KEY]) obj[META_KEY] = null; 
-};
-
-
-})({});
-
-
-(function(exports) {
-// ==========================================================================
-// Project:  SproutCore Metal
-// Copyright: ©2011 Strobe Inc. and contributors.
-// License:   Licensed under MIT license (see license.js)
-// ==========================================================================
-/*globals sc_assert */
-
-require('sproutcore-metal/core');
-require('sproutcore-metal/platform');
-require('sproutcore-metal/utils');
-require('sproutcore-metal/properties');
-
-var meta = SC.meta;
-var guidFor = SC.guidFor;
-var USE_ACCESSORS = SC.USE_ACCESSORS;
-var a_slice = Array.prototype.slice;
-var o_create = SC.platform.create;
-var o_defineProperty = SC.platform.defineProperty;
-
-// ..........................................................
-// DEPENDENT KEYS
-// 
-
-// data structure:
-//  meta.deps = { 
-//   'depKey': { 
-//     'keyName': count,
-//     __scproto__: SRC_OBJ [to detect clones]
-//     },
-//   __scproto__: SRC_OBJ
-//  }
-
-function uniqDeps(obj, depKey) {
-  var m = meta(obj), deps, ret;
-  deps = m.deps;
-  if (!deps) {
-    deps = m.deps = { __scproto__: obj };
-  } else if (deps.__scproto__ !== obj) {
-    deps = m.deps = o_create(deps);
-    deps.__scproto__ = obj;
-  }
-  
-  ret = deps[depKey];
-  if (!ret) {
-    ret = deps[depKey] = { __scproto__: obj };
-  } else if (ret.__scproto__ !== obj) {
-    ret = deps[depKey] = o_create(ret);
-    ret.__scproto__ = obj;
-  }
-  
-  return ret;
-}
-
-function addDependentKey(obj, keyName, depKey) {
-  var deps = uniqDeps(obj, depKey);
-  deps[keyName] = (deps[keyName] || 0) + 1;
-  SC.watch(obj, depKey);
-}
-
-function removeDependentKey(obj, keyName, depKey) {
-  var deps = uniqDeps(obj, depKey);
-  deps[keyName] = (deps[keyName] || 0) - 1;
-  SC.unwatch(obj, depKey);
-}
-
-function addDependentKeys(desc, obj, keyName) {
-  var keys = desc._dependentKeys, 
-      len  = keys ? keys.length : 0;
-  for(var idx=0;idx<len;idx++) addDependentKey(obj, keyName, keys[idx]);
-}
-
-// ..........................................................
-// COMPUTED PROPERTY
-//
-
-function ComputedProperty(func, opts) {
-  this.func = func;
-  this._cacheable = opts && opts.cacheable;
-  this._dependentKeys = opts && opts.dependentKeys;
-}
-
-SC.ComputedProperty = ComputedProperty;
-ComputedProperty.prototype = new SC.Descriptor();
-
-var CP_DESC = {
-  configurable: true,
-  enumerable:   true,
-  get: function() { return undefined; }, // for when use_accessors is false.
-  set: SC.Descriptor.MUST_USE_SETTER  // for when use_accessors is false
-};
-
-function mkCpGetter(keyName, desc) {
-  var cacheable = desc._cacheable, 
-      func     = desc.func;
-      
-  if (cacheable) {
-    return function() {
-      var ret, cache = meta(this).cache;
-      if (keyName in cache) return cache[keyName];
-      ret = cache[keyName] = func.call(this, keyName);
-      return ret ;
-    };
-  } else {
-    return function() {
-      return func.call(this, keyName);
-    };
-  }
-}
-
-function mkCpSetter(keyName, desc) {
-  var cacheable = desc._cacheable,
-      func      = desc.func;
-      
-  return function(value) {
-    var m = meta(this, cacheable),
-        watched = (m.source===this) && m.watching[keyName]>0,
-        ret, oldSuspended, lastSetValues;
-
-    oldSuspended = desc._suspended;
-    desc._suspended = this;
-
-    watched = watched && m.lastSetValues[keyName]!==guidFor(value);
-    if (watched) {
-      m.lastSetValues[keyName] = guidFor(value);
-      SC.propertyWillChange(this, keyName);
-    }
-    
-    if (cacheable) delete m.cache[keyName];
-    ret = func.call(this, keyName, value);
-    if (cacheable) m.cache[keyName] = ret;
-    if (watched) SC.propertyDidChange(this, keyName);
-    desc._suspended = oldSuspended;
-    return ret;
-  };
-}
-
-var Cp = ComputedProperty.prototype;
-
-/**
-  Call on a computed property to set it into cacheable mode.  When in this
-  mode the computed property will automatically cache the return value of 
-  your function until one of the dependent keys changes.
-
-  @param {Boolean} aFlag optional set to false to disable cacheing
-  @returns {SC.ComputedProperty} receiver
-*/
-Cp.cacheable = function(aFlag) {
-  this._cacheable = aFlag!==false;
-  return this;
-};
-
-/**
-  Sets the dependent keys on this computed property.  Pass any number of 
-  arguments containing key paths that this computed property depends on.
-  
-  @param {String} path... zero or more property paths
-  @returns {SC.ComputedProperty} receiver
-*/
-Cp.property = function() {
-  this._dependentKeys = a_slice.call(arguments);
-  return this;
-};
-
-/** @private - impl descriptor API */
-Cp.setup = function(obj, keyName, value) {
-  CP_DESC.get = mkCpGetter(keyName, this);
-  CP_DESC.set = mkCpSetter(keyName, this);
-  o_defineProperty(obj, keyName, CP_DESC);
-  CP_DESC.get = CP_DESC.set = null;
-  addDependentKeys(this, obj, keyName);
-};
-
-/** @private - impl descriptor API */
-Cp.teardown = function(obj, keyName) {
-  var keys = this._dependentKeys, 
-      len  = keys ? keys.length : 0;
-  for(var idx=0;idx<len;idx++) removeDependentKey(obj, keyName, keys[idx]);
-
-  if (this._cacheable) delete meta(obj).cache[keyName];
-  
-  return null; // no value to restore
-};
-
-/** @private - impl descriptor API */
-Cp.didChange = function(obj, keyName) {
-  if (this._cacheable && (this._suspended !== obj)) {
-    delete meta(obj).cache[keyName];
-  }
-};
-
-/** @private - impl descriptor API */
-Cp.get = function(obj, keyName) {
-  var ret, cache;
-  
-  if (this._cacheable) {
-    cache = meta(obj).cache;
-    if (keyName in cache) return cache[keyName];
-    ret = cache[keyName] = this.func.call(obj, keyName);
-  } else {
-    ret = this.func.call(obj, keyName);
-  }
-  return ret ;
-};
-
-/** @private - impl descriptor API */
-Cp.set = function(obj, keyName, value) {
-  var cacheable = this._cacheable;
-  
-  var m = meta(obj, cacheable),
-      watched = (m.source===obj) && m.watching[keyName]>0,
-      ret, oldSuspended, lastSetValues;
-
-  oldSuspended = this._suspended;
-  this._suspended = obj;
-
-  watched = watched && m.lastSetValues[keyName]!==guidFor(value);
-  if (watched) {
-    m.lastSetValues[keyName] = guidFor(value);
-    SC.propertyWillChange(obj, keyName);
-  }
-  
-  if (cacheable) delete m.cache[keyName];
-  ret = this.func.call(obj, keyName, value);
-  if (cacheable) m.cache[keyName] = ret;
-  if (watched) SC.propertyDidChange(obj, keyName);
-  this._suspended = oldSuspended;
-  return ret;
-};
-
-Cp.val = function(obj, keyName) {
-  return meta(obj, false).values[keyName];
-};
-
-if (!SC.platform.hasPropertyAccessors) {
-  Cp.setup = function(obj, keyName, value) {
-    obj[keyName] = undefined; // so it shows up in key iteration
-    addDependentKeys(this, obj, keyName);
-  };
-  
-} else if (!USE_ACCESSORS) {
-  Cp.setup = function(obj, keyName) {
-    // throw exception if not using SC.get() and SC.set() when supported
-    o_defineProperty(obj, keyName, CP_DESC);
-    addDependentKeys(this, obj, keyName);
-  };
-} 
-
-/**
-  This helper returns a new property descriptor that wraps the passed 
-  computed property function.  You can use this helper to define properties
-  with mixins or via SC.defineProperty().
-  
-  The function you pass will be used to both get and set property values.
-  The function should accept two parameters, key and value.  If value is not
-  undefined you should set the value first.  In either case return the 
-  current value of the property.
-  
-  @param {Function} func
-    The computed property function.
-    
-  @returns {SC.ComputedProperty} property descriptor instance
-*/
-SC.computed = function(func) {
-  return new ComputedProperty(func);
-};
-
-})({});
-
-
-(function(exports) {
-// ==========================================================================
-// Project:  SproutCore Metal
-// Copyright: ©2011 Strobe Inc. and contributors.
-// License:   Licensed under MIT license (see license.js)
-// ==========================================================================
-/*globals sc_assert */
-
-require('sproutcore-metal/core');
-require('sproutcore-metal/platform');
-require('sproutcore-metal/utils');
-
-var o_create = SC.platform.create;
-var meta = SC.meta;
-var guidFor = SC.guidFor;
-var array_Slice = Array.prototype.slice;
-
-/**
-  The event system uses a series of nested hashes to store listeners on an
-  object. When a listener is registered, or when an event arrives, these
-  hashes are consulted to determine which target and action pair to invoke.
-
-  The hashes are stored in the object's meta hash, and look like this:
-
-      // Object's meta hash
-      {
-        listeners: {               // variable name: `listenerSet`
-          "foo:changed": {         // variable name: `targetSet`
-            [targetGuid]: {        // variable name: `actionSet`
-              [methodGuid]: {      // variable name: `action`
-                target: [Object object],
-                method: [Function function],
-                xform: [Function function]
-              }
-            }
-          }
-        }
-      }
-
-*/
-
-var metaPath = SC.metaPath;
-
-// Gets the set of all actions, keyed on the guid of each action's
-// method property.
-function actionSetFor(obj, eventName, target, writable) {
-  var targetGuid = guidFor(target);
-  return metaPath(obj, ['listeners', eventName, targetGuid], writable);
-}
-
-// Gets the set of all targets, keyed on the guid of each action's
-// target property.
-function targetSetFor(obj, eventName) {
-  var listenerSet = meta(obj, false).listeners;
-  if (!listenerSet) { return false; }
-
-  return listenerSet[eventName] || false;
-}
-
-// TODO: This knowledge should really be a part of the
-// meta system.
-var SKIP_PROPERTIES = { __sc_source__: true };
-
-// For a given target, invokes all of the methods that have
-// been registered as a listener.
-function invokeEvents(targetSet, params) {
-  // Iterate through all elements of the target set
-  for(var targetGuid in targetSet) {
-    if (SKIP_PROPERTIES[targetGuid]) { continue; }
-
-    var actionSet = targetSet[targetGuid];
-
-    // Iterate through the elements of the action set
-    for(var methodGuid in actionSet) {
-      if (SKIP_PROPERTIES[methodGuid]) { continue; }
-
-      var action = actionSet[methodGuid]
-      if (!action) { continue; }
-
-      // Extract target and method for each action
-      var method = action.method;
-      var target = action.target;
-
-      // If there is no target, the target is the object
-      // on which the event was fired.
-      if (!target) { target = params[0]; }
-      if ('string' === typeof method) { method = target[method]; }
-
-      // Listeners can provide an `xform` function, which can perform
-      // arbitrary transformations, such as changing the order of
-      // parameters.
-      //
-      // This is primarily used by sproutcore-runtime's observer system, which
-      // provides a higher level abstraction on top of events, including
-      // dynamically looking up current values and passing them into the
-      // registered listener.
-      var xform = action.xform;
-
-      if (xform) {
-        xform(target, method, params);
-      } else {
-        method.apply(target, params);
-      }
-    }
-  }
-}
-
-/**
-  The parameters passed to an event listener are not exactly the
-  parameters passed to an observer. if you pass an xform function, it will
-  be invoked and is able to translate event listener parameters into the form
-  that observers are expecting.
-*/
-function addListener(obj, eventName, target, method, xform) {
-  sc_assert("You must pass at least an object and event name to SC.addListener", !!obj && !!eventName);
-
-  if (!method && 'function' === typeof target) {
-    method = target;
-    target = null;
-  }
-
-  var actionSet = actionSetFor(obj, eventName, target, true),
-      methodGuid = guidFor(method), ret;
-
-  if (!actionSet[methodGuid]) {
-    actionSet[methodGuid] = { target: target, method: method, xform: xform };
-  } else {
-    actionSet[methodGuid].xform = xform; // used by observers etc to map params
-  }
-
-  if ('function' === typeof obj.didAddListener) {
-    obj.didAddListener(eventName, target, method);
-  }
-
-  return ret; // return true if this is the first listener.
-}
-
-function removeListener(obj, eventName, target, method) {
-  if (!method && 'function'===typeof target) {
-    method = target;
-    target = null;
-  }
-
-  var actionSet = actionSetFor(obj, eventName, target, true),
-      methodGuid = guidFor(method);
-
-  // we can't simply delete this parameter, because if we do, we might
-  // re-expose the property from the prototype chain.
-  if (actionSet && actionSet[methodGuid]) { actionSet[methodGuid] = null; }
-
-  if (obj && 'function'===typeof obj.didRemoveListener) {
-    obj.didRemoveListener(eventName, target, method);
-  }
-}
-
-// returns a list of currently watched events
-function watchedEvents(obj) {
-  var listeners = meta(obj, false).listeners, ret = [];
-
-  if (listeners) {
-    for(var eventName in listeners) {
-      if (!SKIP_PROPERTIES[eventName] && listeners[eventName]) {
-        ret.push(eventName);
-      }
-    }
-  }
-  return ret;
-}
-
-function sendEvent(obj, eventName) {
-  sc_assert("You must pass an object and event name to SC.sendEvent", !!obj && !!eventName);
-
-  // first give object a chance to handle it
-  if (obj !== SC && 'function' === typeof obj.sendEvent) {
-    obj.sendEvent.apply(obj, array_Slice.call(arguments, 1));
-  }
-
-  var targetSet = targetSetFor(obj, eventName);
-  if (!targetSet) { return false; }
-
-  invokeEvents(targetSet, arguments);
-  return true;
-}
-
-function hasListeners(obj, eventName) {
-  var targetSet = targetSetFor(obj, eventName);
-  if (!targetSet) { return false; }
-
-  for(var targetGuid in targetSet) {
-    if (SKIP_PROPERTIES[targetGuid] || !targetSet[targetGuid]) { continue; }
-
-    var actionSet = targetSet[targetGuid];
-
-    for(var methodGuid in actionSet) {
-      if (SKIP_PROPERTIES[methodGuid] || !actionSet[methodGuid]) { continue; }
-      return true; // stop as soon as we find a valid listener
-    }
-  }
-
-  // no listeners!  might as well clean this up so it is faster later.
-  var set = metaPath(obj, ['listeners'], true);
-  set[eventName] = null;
-
-  return false;
-}
-
-function listenersFor(obj, eventName) {
-  var targetSet = targetSetFor(obj, eventName), ret = [];
-  if (!targetSet) { return ret; }
-
-  var info;
-  for(var targetGuid in targetSet) {
-    if (SKIP_PROPERTIES[targetGuid] || !targetSet[targetGuid]) { continue; }
-
-    var actionSet = targetSet[targetGuid];
-
-    for(var methodGuid in actionSet) {
-      if (SKIP_PROPERTIES[methodGuid] || !actionSet[methodGuid]) { continue; }
-      info = actionSet[methodGuid];
-      ret.push([info.target, info.method]);
-    }
-  }
-
-  return ret;
-}
-
-SC.addListener = addListener;
-SC.removeListener = removeListener;
-SC.sendEvent = sendEvent;
-SC.hasListeners = hasListeners;
-SC.watchedEvents = watchedEvents;
-SC.listenersFor = listenersFor;
-
-})({});
-
-
-(function(exports) {
-// ==========================================================================
-// Project:  SproutCore Metal
-// Copyright: ©2011 Strobe Inc. and contributors.
-// License:   Licensed under MIT license (see license.js)
-// ==========================================================================
-/*globals sc_assert */
-
-require('sproutcore-metal/core');
-require('sproutcore-metal/platform');
-require('sproutcore-metal/utils');
-require('sproutcore-metal/accessors');
-
-var AFTER_OBSERVERS = ':change';
-var BEFORE_OBSERVERS = ':before';
-var guidFor = SC.guidFor;
-var normalizePath = SC.normalizePath;
-
-var suspended = 0;
-var array_Slice = Array.prototype.slice;
-
-var ObserverSet = function(iterateable) {
-  this.set = {};
-  if (iterateable) { this.array = []; }
-}
-
-ObserverSet.prototype.add = function(target, name) {
-  var set = this.set, guid = SC.guidFor(target), array;
-
-  if (!set[guid]) { set[guid] = {}; }
-  set[guid][name] = true;
-  if (array = this.array) {
-    array.push([target, name]);
-  }
-};
-
-ObserverSet.prototype.contains = function(target, name) {
-  var set = this.set, guid = SC.guidFor(target), nameSet = set[guid];
-  return nameSet && nameSet[name];
-};
-
-ObserverSet.prototype.empty = function() {
-  this.set = {};
-  this.array = [];
-};
-
-ObserverSet.prototype.forEach = function(fn) {
-  var q = this.array;
-  this.empty();
-  q.forEach(function(item) {
-    fn(item[0], item[1]);
-  });
-};
-
-var queue = new ObserverSet(true), beforeObserverSet = new ObserverSet();
-
-function notifyObservers(obj, eventName, forceNotification) {
-  if (suspended && !forceNotification) {
-
-    // if suspended add to the queue to send event later - but only send 
-    // event once.
-    if (!queue.contains(obj, eventName)) {
-      queue.add(obj, eventName);
-    }
-
-  } else {
-    SC.sendEvent(obj, eventName);
-  }
-}
-
-function flushObserverQueue() {
-  beforeObserverSet.empty();
-
-  if (!queue || queue.array.length===0) return ;
-  queue.forEach(function(target, event){ SC.sendEvent(target, event); });
-}
-
-SC.beginPropertyChanges = function() {
-  suspended++;
-  return this;
-};
-
-SC.endPropertyChanges = function() {
-  suspended--;
-  if (suspended<=0) flushObserverQueue();
-};
-
-function changeEvent(keyName) {
-  return keyName+AFTER_OBSERVERS;
-}
-
-function beforeEvent(keyName) {
-  return keyName+BEFORE_OBSERVERS;
-}
-
-function changeKey(eventName) {
-  return eventName.slice(0, -7);
-}
-
-function beforeKey(eventName) {
-  return eventName.slice(0, -7);
-}
-
-function xformForArgs(args) {
-  return function (target, method, params) {
-    var obj = params[0], keyName = changeKey(params[1]), val;
-    var copy_args = args.slice();
-    if (method.length>2) val = SC.getPath(obj, keyName);
-    copy_args.unshift(obj, keyName, val);
-    method.apply(target, copy_args);
-  }
-}
-
-var xformChange = xformForArgs([]);
-
-function xformBefore(target, method, params) {
-  var obj = params[0], keyName = beforeKey(params[1]), val;
-  if (method.length>2) val = SC.getPath(obj, keyName);
-  method.call(target, obj, keyName, val);
-}
-
-SC.addObserver = function(obj, path, target, method) {
-  path = normalizePath(path);
-
-  var xform;
-  if (arguments.length > 4) {
-    var args = array_Slice.call(arguments, 4);
-    xform = xformForArgs(args);
-  } else {
-    xform = xformChange;
-  }
-  SC.addListener(obj, changeEvent(path), target, method, xform);
-  SC.watch(obj, path);
-  return this;
-};
-
-/** @private */
-SC.observersFor = function(obj, path) {
-  return SC.listenersFor(obj, changeEvent(path));
-};
-
-SC.removeObserver = function(obj, path, target, method) {
-  path = normalizePath(path);
-  SC.unwatch(obj, path);
-  SC.removeListener(obj, changeEvent(path), target, method);
-  return this;
-};
-
-SC.addBeforeObserver = function(obj, path, target, method) {
-  path = normalizePath(path);
-  SC.addListener(obj, beforeEvent(path), target, method, xformBefore);
-  SC.watch(obj, path);
-  return this;
-};
-
-/** @private */
-SC.beforeObserversFor = function(obj, path) {
-  return SC.listenersFor(obj, beforeEvent(path));
-};
-
-SC.removeBeforeObserver = function(obj, path, target, method) {
-  path = normalizePath(path);
-  SC.unwatch(obj, path);
-  SC.removeListener(obj, beforeEvent(path), target, method);
-  return this;
-};
-
-/** @private */
-SC.notifyObservers = function(obj, keyName) {
-  notifyObservers(obj, changeEvent(keyName));
-};
-
-/** @private */
-SC.notifyBeforeObservers = function(obj, keyName) {
-  var guid, set, forceNotification = false;
-
-  if (suspended) {
-    if (!beforeObserverSet.contains(obj, keyName)) {
-      beforeObserverSet.add(obj, keyName);
-      forceNotification = true;
-    } else {
-      return;
-    }
-  }
-
-  notifyObservers(obj, beforeEvent(keyName), forceNotification);
 };
 
 
@@ -2630,6 +2164,1873 @@ SC.propertyDidChange = function(obj, keyName) {
 (function(exports) {
 // ==========================================================================
 // Project:  SproutCore Runtime
+// Copyright: ©2006-2011 Strobe Inc. and contributors.
+//            Portions ©2008-2010 Apple Inc. All rights reserved.
+// License:   Licensed under MIT license (see license.js)
+// ==========================================================================
+/*globals sc_assert */
+
+require('sproutcore-metal/core'); // SC.Logger
+require('sproutcore-metal/watching'); // SC.watch.flushPending
+require('sproutcore-metal/observer'); // SC.beginPropertyChanges, SC.endPropertyChanges
+require('sproutcore-metal/utils'); // SC.guidFor
+
+// ..........................................................
+// HELPERS
+//
+
+var slice = Array.prototype.slice;
+
+// invokes passed params - normalizing so you can pass target/func,
+// target/string or just func
+function invoke(target, method, args, ignore) {
+
+  if (method===undefined) {
+    method = target;
+    target = undefined;
+  }
+
+  if ('string'===typeof method) method = target[method];
+  if (args && ignore>0) {
+    args = args.length>ignore ? slice.call(args, ignore) : null;
+  }
+  // IE8's Function.prototype.apply doesn't accept undefined/null arguments.
+  return method.apply(target || this, args || []);
+}
+
+
+// ..........................................................
+// RUNLOOP
+//
+
+var timerMark; // used by timers...
+
+var K = function() {};
+var RunLoop = function(prev) {
+  var self;
+  
+  if (this instanceof RunLoop) {
+    self = this;
+  } else {
+    self = new K();
+  }
+
+  self._prev = prev || null;
+  self.onceTimers = {};
+  
+  return self;
+}
+
+K.prototype = RunLoop.prototype;
+
+RunLoop.prototype = {
+  end: function() {
+    this.flush();
+    return this._prev;
+  },
+
+  // ..........................................................
+  // Delayed Actions
+  //
+
+  schedule: function(queueName, target, method) {
+    var queues = this._queues, queue;
+    if (!queues) queues = this._queues = {};
+    queue = queues[queueName];
+    if (!queue) queue = queues[queueName] = [];
+
+    var args = arguments.length>3 ? slice.call(arguments, 3) : null;
+    queue.push({ target: target, method: method, args: args });
+    return this;
+  },
+
+  flush: function(queueName) {
+    var queues = this._queues, queueNames, idx, len, queue, log;
+
+    if (!queues) return this; // nothing to do
+
+    function iter(item) {
+      invoke(item.target, item.method, item.args);
+    }
+
+    SC.watch.flushPending(); // make sure all chained watchers are setup
+
+    if (queueName) {
+      while (this._queues && (queue = this._queues[queueName])) {
+        this._queues[queueName] = null;
+
+        log = SC.LOG_BINDINGS && queueName==='sync';
+        if (log) SC.Logger.log('Begin: Flush Sync Queue');
+
+        // the sync phase is to allow property changes to propogate.  don't
+        // invoke observers until that is finished.
+        if (queueName === 'sync') SC.beginPropertyChanges();
+        queue.forEach(iter);
+        if (queueName === 'sync') SC.endPropertyChanges();
+
+        if (log) SC.Logger.log('End: Flush Sync Queue');
+
+      }
+
+    } else {
+      queueNames = SC.run.queues;
+      len = queueNames.length;
+      do {
+        this._queues = null;
+        for(idx=0;idx<len;idx++) {
+          queueName = queueNames[idx];
+          queue = queues[queueName];
+
+          log = SC.LOG_BINDINGS && queueName==='sync';
+          if (log) SC.Logger.log('Begin: Flush Sync Queue');
+
+          if (queueName === 'sync') SC.beginPropertyChanges();
+          if (queue) queue.forEach(iter);
+          if (queueName === 'sync') SC.endPropertyChanges();
+
+          if (log) SC.Logger.log('End: Flush Sync Queue');
+
+        }
+
+      } while (queues = this._queues); // go until queues stay clean
+    }
+
+    timerMark = null;
+
+    return this;
+  }
+
+};
+
+SC.RunLoop = RunLoop;
+
+// ..........................................................
+// SC.run - this is ideally the only public API the dev sees
+//
+
+var run;
+
+/**
+  Runs the passed target and method inside of a runloop, ensuring any
+  deferred actions including bindings and views updates are flushed at the
+  end.
+
+  Normally you should not need to invoke this method yourself.  However if
+  you are implementing raw event handlers when interfacing with other
+  libraries or plugins, you should probably wrap all of your code inside this
+  call.
+
+  @function
+  @param {Object} target
+    (Optional) target of method to call
+
+  @param {Function|String} method
+    Method to invoke.  May be a function or a string.  If you pass a string
+    then it will be looked up on the passed target.
+
+  @param {Object...} args
+    Any additional arguments you wish to pass to the method.
+
+  @returns {Object} return value from invoking the passed function.
+*/
+SC.run = run = function(target, method) {
+
+  var ret, loop;
+  run.begin();
+  if (target || method) ret = invoke(target, method, arguments, 2);
+  run.end();
+  return ret;
+};
+
+/**
+  Begins a new RunLoop.  Any deferred actions invoked after the begin will
+  be buffered until you invoke a matching call to SC.run.end().  This is
+  an lower-level way to use a RunLoop instead of using SC.run().
+
+  @returns {void}
+*/
+SC.run.begin = function() {
+  run.currentRunLoop = new RunLoop(run.currentRunLoop);
+};
+
+/**
+  Ends a RunLoop.  This must be called sometime after you call SC.run.begin()
+  to flush any deferred actions.  This is a lower-level way to use a RunLoop
+  instead of using SC.run().
+
+  @returns {void}
+*/
+SC.run.end = function() {
+  sc_assert('must have a current run loop', run.currentRunLoop);
+  run.currentRunLoop = run.currentRunLoop.end();
+};
+
+/**
+  Array of named queues.  This array determines the order in which queues
+  are flushed at the end of the RunLoop.  You can define your own queues by
+  simply adding the queue name to this array.  Normally you should not need
+  to inspect or modify this property.
+
+  @property {String}
+*/
+SC.run.queues = ['sync', 'actions', 'destroy', 'timers'];
+
+/**
+  Adds the passed target/method and any optional arguments to the named
+  queue to be executed at the end of the RunLoop.  If you have not already
+  started a RunLoop when calling this method one will be started for you
+  automatically.
+
+  At the end of a RunLoop, any methods scheduled in this way will be invoked.
+  Methods will be invoked in an order matching the named queues defined in
+  the run.queues property.
+
+  @param {String} queue
+    The name of the queue to schedule against.  Default queues are 'sync' and
+    'actions'
+
+  @param {Object} target
+    (Optional) target object to use as the context when invoking a method.
+
+  @param {String|Function} method
+    The method to invoke.  If you pass a string it will be resolved on the
+    target object at the time the scheduled item is invoked allowing you to
+    change the target function.
+
+  @param {Object} arguments...
+    Optional arguments to be passed to the queued method.
+
+  @returns {void}
+*/
+SC.run.schedule = function(queue, target, method) {
+  var loop = run.autorun();
+  loop.schedule.apply(loop, arguments);
+};
+
+var autorunTimer;
+
+function autorun() {
+  autorunTimer = null;
+  if (run.currentRunLoop) run.end();
+}
+
+/**
+  Begins a new RunLoop is necessary and schedules a timer to flush the
+  RunLoop at a later time.  This method is used by parts of SproutCore to
+  ensure the RunLoop always finishes.  You normally do not need to call this
+  method directly.  Instead use SC.run().
+
+  @returns {SC.RunLoop} the new current RunLoop
+*/
+SC.run.autorun = function() {
+
+  if (!run.currentRunLoop) {
+    run.begin();
+
+    // TODO: throw during tests
+    if (SC.testing) {
+      run.end();
+    } else if (!autorunTimer) {
+      autorunTimer = setTimeout(autorun, 1);
+    }
+  }
+
+  return run.currentRunLoop;
+};
+
+/**
+  Immediately flushes any events scheduled in the 'sync' queue.  Bindings
+  use this queue so this method is a useful way to immediately force all
+  bindings in the application to sync.
+
+  You should call this method anytime you need any changed state to propogate
+  throughout the app immediately without repainting the UI.
+
+  @returns {void}
+*/
+SC.run.sync = function() {
+  run.autorun();
+  run.currentRunLoop.flush('sync');
+};
+
+// ..........................................................
+// TIMERS
+//
+
+var timers = {}; // active timers...
+
+var laterScheduled = false;
+function invokeLaterTimers() {
+  var now = (+ new Date()), earliest = -1;
+  for(var key in timers) {
+    if (!timers.hasOwnProperty(key)) continue;
+    var timer = timers[key];
+    if (timer && timer.expires) {
+      if (now >= timer.expires) {
+        delete timers[key];
+        invoke(timer.target, timer.method, timer.args, 2);
+      } else {
+        if (earliest<0 || (timer.expires < earliest)) earliest=timer.expires;
+      }
+    }
+  }
+
+  // schedule next timeout to fire...
+  if (earliest>0) setTimeout(invokeLaterTimers, earliest-(+ new Date())); 
+}
+
+/**
+  Invokes the passed target/method and optional arguments after a specified
+  period if time.  The last parameter of this method must always be a number
+  of milliseconds.
+
+  You should use this method whenever you need to run some action after a
+  period of time inside of using setTimeout().  This method will ensure that
+  items that expire during the same script execution cycle all execute
+  together, which is often more efficient than using a real setTimeout.
+
+  @param {Object} target
+    (optional) target of method to invoke
+
+  @param {Function|String} method
+    The method to invoke.  If you pass a string it will be resolved on the
+    target at the time the method is invoked.
+
+  @param {Object...} args
+    Optional arguments to pass to the timeout.
+
+  @param {Number} wait
+    Number of milliseconds to wait.
+
+  @returns {Timer} an object you can use to cancel a timer at a later time.
+*/
+SC.run.later = function(target, method) {
+  var args, expires, timer, guid, wait;
+
+  // setTimeout compatibility...
+  if (arguments.length===2 && 'function' === typeof target) {
+    wait   = method;
+    method = target;
+    target = undefined;
+    args   = [target, method];
+
+  } else {
+    args = slice.call(arguments);
+    wait = args.pop();
+  }
+  
+  expires = (+ new Date())+wait;
+  timer   = { target: target, method: method, expires: expires, args: args };
+  guid    = SC.guidFor(timer);
+  timers[guid] = timer;
+  run.once(timers, invokeLaterTimers);
+  return guid;
+};
+
+function invokeOnceTimer(guid, onceTimers) {
+  if (onceTimers[this.tguid]) delete onceTimers[this.tguid][this.mguid];
+  if (timers[guid]) invoke(this.target, this.method, this.args, 2);
+  delete timers[guid];
+}
+
+/**
+  Schedules an item to run one time during the current RunLoop.  Calling
+  this method with the same target/method combination will have no effect.
+
+  Note that although you can pass optional arguments these will not be
+  considered when looking for duplicates.  New arguments will replace previous
+  calls.
+
+  @param {Object} target
+    (optional) target of method to invoke
+
+  @param {Function|String} method
+    The method to invoke.  If you pass a string it will be resolved on the
+    target at the time the method is invoked.
+
+  @param {Object...} args
+    Optional arguments to pass to the timeout.
+
+
+  @returns {Object} timer
+*/
+SC.run.once = function(target, method) {
+  var tguid = SC.guidFor(target), mguid = SC.guidFor(method), guid, timer;
+
+  var onceTimers = run.autorun().onceTimers;
+  guid = onceTimers[tguid] && onceTimers[tguid][mguid];
+  if (guid && timers[guid]) {
+    timers[guid].args = slice.call(arguments); // replace args
+
+  } else {
+    timer = {
+      target: target,
+      method: method,
+      args:   slice.call(arguments),
+      tguid:  tguid,
+      mguid:  mguid
+    };
+
+    guid  = SC.guidFor(timer);
+    timers[guid] = timer;
+    if (!onceTimers[tguid]) onceTimers[tguid] = {};
+    onceTimers[tguid][mguid] = guid; // so it isn't scheduled more than once
+
+    run.schedule('actions', timer, invokeOnceTimer, guid, onceTimers);
+  }
+
+  return guid;
+};
+
+var scheduledNext = false;
+function invokeNextTimers() {
+  scheduledNext = null;
+  for(var key in timers) {
+    if (!timers.hasOwnProperty(key)) continue;
+    var timer = timers[key];
+    if (timer.next) {
+      delete timers[key];
+      invoke(timer.target, timer.method, timer.args, 2);
+    }
+  }
+}
+
+/**
+  Schedules an item to run after control has been returned to the system.
+  This is often equivalent to calling setTimeout(function...,1).
+
+  @param {Object} target
+    (optional) target of method to invoke
+
+  @param {Function|String} method
+    The method to invoke.  If you pass a string it will be resolved on the
+    target at the time the method is invoked.
+
+  @param {Object...} args
+    Optional arguments to pass to the timeout.
+
+  @returns {Object} timer
+*/
+SC.run.next = function(target, method) {
+  var timer, guid;
+
+  timer = {
+    target: target,
+    method: method,
+    args: slice.call(arguments),
+    next: true
+  };
+
+  guid = SC.guidFor(timer);
+  timers[guid] = timer;
+
+  if (!scheduledNext) scheduledNext = setTimeout(invokeNextTimers, 1);
+  return guid;
+};
+
+/**
+  Cancels a scheduled item.  Must be a value returned by `SC.run.later()`,
+  `SC.run.once()`, or `SC.run.next()`.
+
+  @param {Object} timer
+    Timer object to cancel
+
+  @returns {void}
+*/
+SC.run.cancel = function(timer) {
+  delete timers[timer];
+};
+
+
+// ..........................................................
+// DEPRECATED API
+//
+
+/**
+  @deprecated
+  @method
+
+  Use `#js:SC.run.begin()` instead
+*/
+SC.RunLoop.begin = SC.run.begin;
+
+/**
+  @deprecated
+  @method
+
+  Use `#js:SC.run.end()` instead
+*/
+SC.RunLoop.end = SC.run.end;
+
+
+
+})({});
+
+
+(function(exports) {
+// ==========================================================================
+// Project:  SproutCore Runtime
+// Copyright: ©2011 Strobe Inc. and contributors.
+// License:   Licensed under MIT license (see license.js)
+// ==========================================================================
+/*globals sc_assert */
+
+require('sproutcore-metal/core'); // SC.Logger
+require('sproutcore-metal/accessors'); // get, getPath, setPath, trySetPath
+require('sproutcore-metal/utils'); // guidFor, isArray, meta
+require('sproutcore-metal/observer'); // addObserver, removeObserver
+require('sproutcore-metal/run_loop'); // SC.run.schedule
+
+// ..........................................................
+// CONSTANTS
+//
+
+
+/**
+  @static
+
+  Debug parameter you can turn on. This will log all bindings that fire to
+  the console. This should be disabled in production code. Note that you
+  can also enable this from the console or temporarily.
+
+  @type Boolean
+  @default NO
+*/
+SC.LOG_BINDINGS = false || !!SC.ENV.LOG_BINDINGS;
+
+/**
+  @static
+
+  Performance paramter. This will benchmark the time spent firing each
+  binding.
+
+  @type Boolean
+*/
+SC.BENCHMARK_BINDING_NOTIFICATIONS = !!SC.ENV.BENCHMARK_BINDING_NOTIFICATIONS;
+
+/**
+  @static
+
+  Performance parameter. This will benchmark the time spend configuring each
+  binding.
+
+  @type Boolean
+*/
+SC.BENCHMARK_BINDING_SETUP = !!SC.ENV.BENCHMARK_BINDING_SETUP;
+
+
+/**
+  @static
+
+  Default placeholder for multiple values in bindings.
+
+  @type String
+  @default '@@MULT@@'
+*/
+SC.MULTIPLE_PLACEHOLDER = '@@MULT@@';
+
+/**
+  @static
+
+  Default placeholder for empty values in bindings.  Used by notEmpty()
+  helper unless you specify an alternative.
+
+  @type String
+  @default '@@EMPTY@@'
+*/
+SC.EMPTY_PLACEHOLDER = '@@EMPTY@@';
+
+// ..........................................................
+// TYPE COERCION HELPERS
+//
+
+// Coerces a non-array value into an array.
+function MULTIPLE(val) {
+  if (val instanceof Array) return val;
+  if (val === undefined || val === null) return [];
+  return [val];
+}
+
+// Treats a single-element array as the element. Otherwise
+// returns a placeholder.
+function SINGLE(val, placeholder) {
+  if (val instanceof Array) {
+    if (val.length>1) return placeholder;
+    else return val[0];
+  }
+  return val;
+}
+
+// Coerces the binding value into a Boolean.
+
+var BOOL = {
+  to: function (val) {
+    return !!val;
+  }
+};
+
+// Returns the Boolean inverse of the value.
+var NOT = {
+  to: function NOT(val) {
+    return !val;
+  }
+};
+
+var get     = SC.get,
+    getPath = SC.getPath,
+    setPath = SC.setPath,
+    guidFor = SC.guidFor;
+
+// Applies a binding's transformations against a value.
+function getTransformedValue(binding, val, obj, dir) {
+
+  // First run a type transform, if it exists, that changes the fundamental
+  // type of the value. For example, some transforms convert an array to a
+  // single object.
+
+  var typeTransform = binding._typeTransform;
+  if (typeTransform) { val = typeTransform(val, binding._placeholder); }
+
+  // handle transforms
+  var transforms = binding._transforms,
+      len        = transforms ? transforms.length : 0,
+      idx;
+
+  for(idx=0;idx<len;idx++) {
+    var transform = transforms[idx][dir];
+    if (transform) { val = transform.call(this, val, obj); }
+  }
+  return val;
+}
+
+function empty(val) {
+  return val===undefined || val===null || val==='' || (SC.isArray(val) && get(val, 'length')===0) ;
+}
+
+function getTransformedFromValue(obj, binding) {
+  var operation = binding._operation;
+  var fromValue = operation ? operation(obj, binding._from, binding._operand) : getPath(obj, binding._from);
+  return getTransformedValue(binding, fromValue, obj, 'to');
+}
+
+function getTransformedToValue(obj, binding) {
+  var toValue = getPath(obj, binding._to);
+  return getTransformedValue(binding, toValue, obj, 'from');
+}
+
+var AND_OPERATION = function(obj, left, right) {
+  return getPath(obj, left) && getPath(obj, right);
+};
+
+var OR_OPERATION = function(obj, left, right) {
+  return getPath(obj, left) || getPath(obj, right);
+};
+
+// ..........................................................
+// BINDING
+//
+
+/**
+  @class
+
+  A binding simply connects the properties of two objects so that whenever the
+  value of one property changes, the other property will be changed also. You
+  do not usually work with Binding objects directly but instead describe
+  bindings in your class definition using something like:
+
+        valueBinding: "MyApp.someController.title"
+
+  This will create a binding from `MyApp.someController.title` to the `value`
+  property of your object instance automatically. Now the two values will be
+  kept in sync.
+
+  ## Customizing Your Bindings
+
+  In addition to synchronizing values, bindings can also perform some basic
+  transforms on values. These transforms can help to make sure the data fed
+  into one object always meets the expectations of that object regardless of
+  what the other object outputs.
+
+  To customize a binding, you can use one of the many helper methods defined
+  on SC.Binding like so:
+
+        valueBinding: SC.Binding.single("MyApp.someController.title")
+
+  This will create a binding just like the example above, except that now the
+  binding will convert the value of `MyApp.someController.title` to a single
+  object (removing any arrays) before applying it to the `value` property of
+  your object.
+
+  You can also chain helper methods to build custom bindings like so:
+
+        valueBinding: SC.Binding.single("MyApp.someController.title").notEmpty("(EMPTY)")
+
+  This will force the value of MyApp.someController.title to be a single value
+  and then check to see if the value is "empty" (null, undefined, empty array,
+  or an empty string). If it is empty, the value will be set to the string
+  "(EMPTY)".
+
+  ## One Way Bindings
+
+  One especially useful binding customization you can use is the `oneWay()`
+  helper. This helper tells SproutCore that you are only interested in
+  receiving changes on the object you are binding from. For example, if you
+  are binding to a preference and you want to be notified if the preference
+  has changed, but your object will not be changing the preference itself, you
+  could do:
+
+        bigTitlesBinding: SC.Binding.oneWay("MyApp.preferencesController.bigTitles")
+
+  This way if the value of MyApp.preferencesController.bigTitles changes the
+  "bigTitles" property of your object will change also. However, if you
+  change the value of your "bigTitles" property, it will not update the
+  preferencesController.
+
+  One way bindings are almost twice as fast to setup and twice as fast to
+  execute because the binding only has to worry about changes to one side.
+
+  You should consider using one way bindings anytime you have an object that
+  may be created frequently and you do not intend to change a property; only
+  to monitor it for changes. (such as in the example above).
+
+  ## Adding Custom Transforms
+
+  In addition to using the standard helpers provided by SproutCore, you can
+  also defined your own custom transform functions which will be used to
+  convert the value. To do this, just define your transform function and add
+  it to the binding with the transform() helper. The following example will
+  not allow Integers less than ten. Note that it checks the value of the
+  bindings and allows all other values to pass:
+
+        valueBinding: SC.Binding.transform(function(value, binding) {
+          return ((SC.typeOf(value) === 'number') && (value < 10)) ? 10 : value;
+        }).from("MyApp.someController.value")
+
+  If you would like to instead use this transform on a number of bindings,
+  you can also optionally add your own helper method to SC.Binding. This
+  method should simply return the value of `this.transform()`. The example
+  below adds a new helper called `notLessThan()` which will limit the value to
+  be not less than the passed minimum:
+
+      SC.Binding.reopen({
+        notLessThan: function(minValue) {
+          return this.transform(function(value, binding) {
+            return ((SC.typeOf(value) === 'number') && (value < minValue)) ? minValue : value;
+          });
+        }
+      });
+
+  You could specify this in your core.js file, for example. Then anywhere in
+  your application you can use it to define bindings like so:
+
+        valueBinding: SC.Binding.from("MyApp.someController.value").notLessThan(10)
+
+  Also, remember that helpers are chained so you can use your helper along
+  with any other helpers. The example below will create a one way binding that
+  does not allow empty values or values less than 10:
+
+        valueBinding: SC.Binding.oneWay("MyApp.someController.value").notEmpty().notLessThan(10)
+
+  ## How to Manually Adding Binding
+
+  All of the examples above show you how to configure a custom binding, but
+  the result of these customizations will be a binding template, not a fully
+  active binding. The binding will actually become active only when you
+  instantiate the object the binding belongs to. It is useful however, to
+  understand what actually happens when the binding is activated.
+
+  For a binding to function it must have at least a "from" property and a "to"
+  property. The from property path points to the object/key that you want to
+  bind from while the to path points to the object/key you want to bind to.
+
+  When you define a custom binding, you are usually describing the property
+  you want to bind from (such as "MyApp.someController.value" in the examples
+  above). When your object is created, it will automatically assign the value
+  you want to bind "to" based on the name of your binding key. In the
+  examples above, during init, SproutCore objects will effectively call
+  something like this on your binding:
+
+        binding = SC.Binding.from(this.valueBinding).to("value");
+
+  This creates a new binding instance based on the template you provide, and
+  sets the to path to the "value" property of the new object. Now that the
+  binding is fully configured with a "from" and a "to", it simply needs to be
+  connected to become active. This is done through the connect() method:
+
+        binding.connect(this);
+
+  Note that when you connect a binding you pass the object you want it to be
+  connected to.  This object will be used as the root for both the from and
+  to side of the binding when inspecting relative paths.  This allows the
+  binding to be automatically inherited by subclassed objects as well.
+
+  Now that the binding is connected, it will observe both the from and to side
+  and relay changes.
+
+  If you ever needed to do so (you almost never will, but it is useful to
+  understand this anyway), you could manually create an active binding by
+  using the SC.bind() helper method. (This is the same method used by
+  to setup your bindings on objects):
+
+        SC.bind(MyApp.anotherObject, "value", "MyApp.someController.value");
+
+  Both of these code fragments have the same effect as doing the most friendly
+  form of binding creation like so:
+
+        MyApp.anotherObject = SC.Object.create({
+          valueBinding: "MyApp.someController.value",
+
+          // OTHER CODE FOR THIS OBJECT...
+
+        });
+
+  SproutCore's built in binding creation method makes it easy to automatically
+  create bindings for you. You should always use the highest-level APIs
+  available, even if you understand how to it works underneath.
+
+  @since SproutCore 1.0
+*/
+var K = function() {};
+var Binding = function(toPath, fromPath) {
+  var self;
+  
+  if (this instanceof Binding) {
+    self = this;
+  } else {
+    self = new K();
+  }
+  
+  /** @private */
+  self._direction = 'fwd';
+
+  /** @private */
+  self._from = fromPath;
+  self._to   = toPath;
+  
+  return self;
+};
+
+K.prototype = Binding.prototype;
+
+Binding.prototype = {
+  // ..........................................................
+  // CONFIG
+  //
+
+  /**
+    This will set "from" property path to the specified value. It will not
+    attempt to resolve this property path to an actual object until you
+    connect the binding.
+
+    The binding will search for the property path starting at the root object
+    you pass when you connect() the binding.  It follows the same rules as
+    `getPath()` - see that method for more information.
+
+    @param {String} propertyPath the property path to connect to
+    @returns {SC.Binding} receiver
+  */
+  from: function(object, path) {
+    if (!path) { path = object; object = null; }
+
+    this._from = path;
+    this._object = object;
+    return this;
+  },
+
+  /**
+    This will set the "to" property path to the specified value. It will not
+    attempt to reoslve this property path to an actual object until you
+    connect the binding.
+
+    The binding will search for the property path starting at the root object
+    you pass when you connect() the binding.  It follows the same rules as
+    `getPath()` - see that method for more information.
+
+    @param {String|Tuple} propertyPath A property path or tuple
+    @param {Object} [root] Root object to use when resolving the path.
+    @returns {SC.Binding} this
+  */
+  to: function(path) {
+    this._to = path;
+    return this;
+  },
+
+  /**
+    Configures the binding as one way. A one-way binding will relay changes
+    on the "from" side to the "to" side, but not the other way around. This
+    means that if you change the "to" side directly, the "from" side may have
+    a different value.
+
+    @param {Boolean} flag
+      (Optional) passing nothing here will make the binding oneWay.  You can
+      instead pass NO to disable oneWay, making the binding two way again.
+
+    @returns {SC.Binding} receiver
+  */
+  oneWay: function(flag) {
+    this._oneWay = flag===undefined ? true : !!flag;
+    return this;
+  },
+
+  /**
+    Adds the specified transform to the array of transform functions.
+
+    A transform is a hash with `to` and `from` properties. Each property
+    should be a function that performs a transformation in either the
+    forward or back direction.
+
+    The functions you pass must have the following signature:
+
+          function(value) {};
+
+    They must also return the transformed value.
+
+    Transforms are invoked in the order they were added. If you are
+    extending a binding and want to reset the transforms, you can call
+    `resetTransform()` first.
+
+    @param {Function} transformFunc the transform function.
+    @returns {SC.Binding} this
+  */
+  transform: function(transform) {
+    if ('function' === typeof transform) {
+      transform = { to: transform };
+    }
+
+    if (!this._transforms) this._transforms = [];
+    this._transforms.push(transform);
+    return this;
+  },
+
+  /**
+    Resets the transforms for the binding. After calling this method the
+    binding will no longer transform values. You can then add new transforms
+    as needed.
+
+    @returns {SC.Binding} this
+  */
+  resetTransforms: function() {
+    this._transforms = null;
+    return this;
+  },
+
+  /**
+    Adds a transform to the chain that will allow only single values to pass.
+    This will allow single values and nulls to pass through. If you pass an
+    array, it will be mapped as so:
+
+      - [] => null
+      - [a] => a
+      - [a,b,c] => Multiple Placeholder
+
+    You can pass in an optional multiple placeholder or it will use the
+    default.
+
+    Note that this transform will only happen on forwarded valued. Reverse
+    values are send unchanged.
+
+    @param {String} fromPath from path or null
+    @param {Object} [placeholder] Placeholder value.
+    @returns {SC.Binding} this
+  */
+  single: function(placeholder) {
+    if (placeholder===undefined) placeholder = SC.MULTIPLE_PLACEHOLDER;
+    this._typeTransform = SINGLE;
+    this._placeholder = placeholder;
+    return this;
+  },
+
+  /**
+    Adds a transform that will convert the passed value to an array. If
+    the value is null or undefined, it will be converted to an empty array.
+
+    @param {String} [fromPath]
+    @returns {SC.Binding} this
+  */
+  multiple: function() {
+    this._typeTransform = MULTIPLE;
+    this._placeholder = null;
+    return this;
+  },
+
+  /**
+    Adds a transform to convert the value to a bool value. If the value is
+    an array it will return YES if array is not empty. If the value is a
+    string it will return YES if the string is not empty.
+
+    @returns {SC.Binding} this
+  */
+  bool: function() {
+    this.transform(BOOL);
+    return this;
+  },
+
+  /**
+    Adds a transform that will return the placeholder value if the value is
+    null, undefined, an empty array or an empty string. See also notNull().
+
+    @param {Object} [placeholder] Placeholder value.
+    @returns {SC.Binding} this
+  */
+  notEmpty: function(placeholder) {
+    // Display warning for users using the SC 1.x-style API.
+    sc_assert("notEmpty should only take a placeholder as a parameter. You no longer need to pass null as the first parameter.", arguments.length < 2);
+
+    if (placeholder == undefined) { placeholder = SC.EMPTY_PLACEHOLDER; }
+
+    this.transform({
+      to: function(val) { return empty(val) ? placeholder : val; }
+    });
+
+    return this;
+  },
+
+  /**
+    Adds a transform that will return the placeholder value if the value is
+    null or undefined. Otherwise it will passthrough untouched. See also notEmpty().
+
+    @param {String} fromPath from path or null
+    @param {Object} [placeholder] Placeholder value.
+    @returns {SC.Binding} this
+  */
+  notNull: function(placeholder) {
+    if (placeholder == undefined) { placeholder = SC.EMPTY_PLACEHOLDER; }
+
+    this.transform({
+      to: function(val) { return val == null ? placeholder : val; }
+    });
+
+    return this;
+  },
+
+  /**
+    Adds a transform to convert the value to the inverse of a bool value. This
+    uses the same transform as bool() but inverts it.
+
+    @returns {SC.Binding} this
+  */
+  not: function() {
+    this.transform(NOT);
+    return this;
+  },
+
+  /**
+    Adds a transform that will return YES if the value is null or undefined, NO otherwise.
+
+    @returns {SC.Binding} this
+  */
+  isNull: function() {
+    this.transform(function(val) { return val == null; });
+    return this;
+  },
+
+  /** @private */
+  toString: function() {
+    var oneWay = this._oneWay ? '[oneWay]' : '';
+    return "SC.Binding<" + guidFor(this) + ">(" + this._from + " -> " + this._to + ")" + oneWay;
+  },
+
+  // ..........................................................
+  // CONNECT AND SYNC
+  //
+
+  /**
+    Attempts to connect this binding instance so that it can receive and relay
+    changes. This method will raise an exception if you have not set the
+    from/to properties yet.
+
+    @param {Object} obj
+      The root object for this binding.
+
+    @param {Boolean} preferFromParam
+      private: Normally, `connect` cannot take an object if `from` already set
+      an object. Internally, we would like to be able to provide a default object
+      to be used if no object was provided via `from`, so this parameter turns
+      off the assertion.
+
+    @returns {SC.Binding} this
+  */
+  connect: function(obj) {
+    sc_assert('Must pass a valid object to SC.Binding.connect()', !!obj);
+
+    var oneWay = this._oneWay, operand = this._operand;
+
+    // add an observer on the object to be notified when the binding should be updated
+    SC.addObserver(obj, this._from, this, this.fromDidChange);
+
+    // if there is an operand, add an observer onto it as well
+    if (operand) { SC.addObserver(obj, operand, this, this.fromDidChange); }
+
+    // if the binding is a two-way binding, also set up an observer on the target
+    // object.
+    if (!oneWay) { SC.addObserver(obj, this._to, this, this.toDidChange); }
+
+    if (SC.meta(obj,false).proto !== obj) { this._scheduleSync(obj, 'fwd'); }
+
+    this._readyToSync = true;
+    return this;
+  },
+
+  /**
+    Disconnects the binding instance. Changes will no longer be relayed. You
+    will not usually need to call this method.
+
+    @param {Object} obj
+      The root object you passed when connecting the binding.
+
+    @returns {SC.Binding} this
+  */
+  disconnect: function(obj) {
+    sc_assert('Must pass a valid object to SC.Binding.disconnect()', !!obj);
+
+    var oneWay = this._oneWay, operand = this._operand;
+
+    // remove an observer on the object so we're no longer notified of
+    // changes that should update bindings.
+    SC.removeObserver(obj, this._from, this, this.fromDidChange);
+
+    // if there is an operand, remove the observer from it as well
+    if (operand) SC.removeObserver(obj, operand, this, this.fromDidChange);
+
+    // if the binding is two-way, remove the observer from the target as well
+    if (!oneWay) SC.removeObserver(obj, this._to, this, this.toDidChange);
+
+    this._readyToSync = false; // disable scheduled syncs...
+    return this;
+  },
+
+  // ..........................................................
+  // PRIVATE
+  //
+
+  /** @private - called when the from side changes */
+  fromDidChange: function(target) {
+    this._scheduleSync(target, 'fwd');
+  },
+
+  /** @private - called when the to side changes */
+  toDidChange: function(target) {
+    this._scheduleSync(target, 'back');
+  },
+
+  /** @private */
+  _scheduleSync: function(obj, dir) {
+    var guid = guidFor(obj), existingDir = this[guid];
+
+    // if we haven't scheduled the binding yet, schedule it
+    if (!existingDir) {
+      SC.run.schedule('sync', this, this._sync, obj);
+      this[guid] = dir;
+    }
+
+    // If both a 'back' and 'fwd' sync have been scheduled on the same object,
+    // default to a 'fwd' sync so that it remains deterministic.
+    if (existingDir === 'back' && dir === 'fwd') {
+      this[guid] = 'fwd';
+    }
+  },
+
+  /** @private */
+  _sync: function(obj) {
+    var log = SC.LOG_BINDINGS;
+
+    // don't synchronize destroyed objects or disconnected bindings
+    if (obj.isDestroyed || !this._readyToSync) { return; }
+
+    // get the direction of the binding for the object we are
+    // synchronizing from
+    var guid = guidFor(obj), direction = this[guid], val, transformedValue;
+
+    var fromPath = this._from, toPath = this._to;
+
+    delete this[guid];
+
+    // apply any operations to the object, then apply transforms
+    var fromValue = getTransformedFromValue(obj, this);
+    var toValue   = getTransformedToValue(obj, this);
+
+    if (toValue === fromValue) { return; }
+
+    // if we're synchronizing from the remote object...
+    if (direction === 'fwd') {
+      if (log) { SC.Logger.log(' ', this.toString(), val, '->', fromValue, obj); }
+      SC.trySetPath(obj, toPath, fromValue);
+
+    // if we're synchronizing *to* the remote object
+    } else if (direction === 'back') {// && !this._oneWay) {
+      if (log) { SC.Logger.log(' ', this.toString(), val, '<-', fromValue, obj); }
+      SC.trySetPath(obj, fromPath, toValue);
+    }
+  }
+
+};
+
+function mixinProperties(to, from) {
+  for (var key in from) {
+    if (from.hasOwnProperty(key)) {
+      to[key] = from[key];
+    }
+  }
+};
+
+mixinProperties(Binding, {
+
+  /**
+    @see SC.Binding.prototype.from
+  */
+  from: function() {
+    var C = this, binding = new C();
+    return binding.from.apply(binding, arguments);
+  },
+
+  /**
+    @see SC.Binding.prototype.to
+  */
+  to: function() {
+    var C = this, binding = new C();
+    return binding.to.apply(binding, arguments);
+  },
+
+  /**
+    @see SC.Binding.prototype.oneWay
+  */
+  oneWay: function(from, flag) {
+    var C = this, binding = new C(null, from);
+    return binding.oneWay(flag);
+  },
+
+  /**
+    @see SC.Binding.prototype.single
+  */
+  single: function(from) {
+    var C = this, binding = new C(null, from);
+    return binding.single();
+  },
+
+  /**
+    @see SC.Binding.prototype.multiple
+  */
+  multiple: function(from) {
+    var C = this, binding = new C(null, from);
+    return binding.multiple();
+  },
+
+  /**
+    @see SC.Binding.prototype.transform
+  */
+  transform: function(func) {
+    var C = this, binding = new C();
+    return binding.transform(func);
+  },
+
+  /**
+    @see SC.Binding.prototype.notEmpty
+  */
+  notEmpty: function(from, placeholder) {
+    var C = this, binding = new C(null, from);
+    return binding.notEmpty(placeholder);
+  },
+
+  /**
+    @see SC.Binding.prototype.bool
+  */
+  bool: function(from) {
+    var C = this, binding = new C(null, from);
+    return binding.bool();
+  },
+
+  /**
+    @see SC.Binding.prototype.not
+  */
+  not: function(from) {
+    var C = this, binding = new C(null, from);
+    return binding.not();
+  },
+
+  /**
+    Adds a transform that forwards the logical 'AND' of values at 'pathA' and
+    'pathB' whenever either source changes. Note that the transform acts
+    strictly as a one-way binding, working only in the direction
+
+        'pathA' AND 'pathB' --> value  (value returned is the result of ('pathA' && 'pathB'))
+
+    Usage example where a delete button's `isEnabled` value is determined by
+    whether something is selected in a list and whether the current user is
+    allowed to delete:
+
+        deleteButton: SC.ButtonView.design({
+          isEnabledBinding: SC.Binding.and('MyApp.itemsController.hasSelection', 'MyApp.userController.canDelete')
+        })
+
+    @param {String} pathA The first part of the conditional
+    @param {String} pathB The second part of the conditional
+  */
+  and: function(pathA, pathB) {
+    var C = this, binding = new C(null, pathA).oneWay();
+    binding._operand = pathB;
+    binding._operation = AND_OPERATION;
+    return binding;
+  },
+
+  /**
+    Adds a transform that forwards the 'OR' of values at 'pathA' and
+    'pathB' whenever either source changes. Note that the transform acts
+    strictly as a one-way binding, working only in the direction
+
+        'pathA' AND 'pathB' --> value  (value returned is the result of ('pathA' || 'pathB'))
+
+    @param {String} pathA The first part of the conditional
+    @param {String} pathB The second part of the conditional
+  */
+  or: function(pathA, pathB) {
+    var C = this, binding = new C(null, pathA).oneWay();
+    binding._operand = pathB;
+    binding._operation = OR_OPERATION;
+    return binding;
+  }
+
+});
+
+SC.Binding = Binding;
+
+/**
+  Global helper method to create a new binding.  Just pass the root object
+  along with a to and from path to create and connect the binding.  The new
+  binding object will be returned which you can further configure with
+  transforms and other conditions.
+
+  @param {Object} obj
+    The root object of the transform.
+
+  @param {String} to
+    The path to the 'to' side of the binding.  Must be relative to obj.
+
+  @param {String} from
+    The path to the 'from' side of the binding.  Must be relative to obj or
+    a global path.
+
+  @returns {SC.Binding} binding instance
+*/
+SC.bind = function(obj, to, from) {
+  return new SC.Binding(to, from).connect(obj);
+};
+
+SC.oneWay = function(obj, to, from) {
+  return new SC.Binding(to, from).oneWay().connect(obj);
+}
+
+})({});
+
+
+(function(exports) {
+// ==========================================================================
+// Project:  SproutCore Metal
+// Copyright: ©2011 Strobe Inc. and contributors.
+// License:   Licensed under MIT license (see license.js)
+// ==========================================================================
+/*globals sc_assert */
+
+require('sproutcore-metal/core');
+require('sproutcore-metal/platform');
+require('sproutcore-metal/utils');
+require('sproutcore-metal/properties');
+
+var meta = SC.meta;
+var guidFor = SC.guidFor;
+var USE_ACCESSORS = SC.USE_ACCESSORS;
+var a_slice = Array.prototype.slice;
+var o_create = SC.platform.create;
+var o_defineProperty = SC.platform.defineProperty;
+
+// ..........................................................
+// DEPENDENT KEYS
+// 
+
+// data structure:
+//  meta.deps = { 
+//   'depKey': { 
+//     'keyName': count,
+//     __scproto__: SRC_OBJ [to detect clones]
+//     },
+//   __scproto__: SRC_OBJ
+//  }
+
+function uniqDeps(obj, depKey) {
+  var m = meta(obj), deps, ret;
+  deps = m.deps;
+  if (!deps) {
+    deps = m.deps = { __scproto__: obj };
+  } else if (deps.__scproto__ !== obj) {
+    deps = m.deps = o_create(deps);
+    deps.__scproto__ = obj;
+  }
+  
+  ret = deps[depKey];
+  if (!ret) {
+    ret = deps[depKey] = { __scproto__: obj };
+  } else if (ret.__scproto__ !== obj) {
+    ret = deps[depKey] = o_create(ret);
+    ret.__scproto__ = obj;
+  }
+  
+  return ret;
+}
+
+function addDependentKey(obj, keyName, depKey) {
+  var deps = uniqDeps(obj, depKey);
+  deps[keyName] = (deps[keyName] || 0) + 1;
+  SC.watch(obj, depKey);
+}
+
+function removeDependentKey(obj, keyName, depKey) {
+  var deps = uniqDeps(obj, depKey);
+  deps[keyName] = (deps[keyName] || 0) - 1;
+  SC.unwatch(obj, depKey);
+}
+
+function addDependentKeys(desc, obj, keyName) {
+  var keys = desc._dependentKeys, 
+      len  = keys ? keys.length : 0;
+  for(var idx=0;idx<len;idx++) addDependentKey(obj, keyName, keys[idx]);
+}
+
+// ..........................................................
+// COMPUTED PROPERTY
+//
+
+function ComputedProperty(func, opts) {
+  this.func = func;
+  this._cacheable = opts && opts.cacheable;
+  this._dependentKeys = opts && opts.dependentKeys;
+}
+
+SC.ComputedProperty = ComputedProperty;
+ComputedProperty.prototype = new SC.Descriptor();
+
+var CP_DESC = {
+  configurable: true,
+  enumerable:   true,
+  get: function() { return undefined; }, // for when use_accessors is false.
+  set: SC.Descriptor.MUST_USE_SETTER  // for when use_accessors is false
+};
+
+function mkCpGetter(keyName, desc) {
+  var cacheable = desc._cacheable, 
+      func     = desc.func;
+      
+  if (cacheable) {
+    return function() {
+      var ret, cache = meta(this).cache;
+      if (keyName in cache) return cache[keyName];
+      ret = cache[keyName] = func.call(this, keyName);
+      return ret ;
+    };
+  } else {
+    return function() {
+      return func.call(this, keyName);
+    };
+  }
+}
+
+function mkCpSetter(keyName, desc) {
+  var cacheable = desc._cacheable,
+      func      = desc.func;
+      
+  return function(value) {
+    var m = meta(this, cacheable),
+        watched = (m.source===this) && m.watching[keyName]>0,
+        ret, oldSuspended, lastSetValues;
+
+    oldSuspended = desc._suspended;
+    desc._suspended = this;
+
+    watched = watched && m.lastSetValues[keyName]!==guidFor(value);
+    if (watched) {
+      m.lastSetValues[keyName] = guidFor(value);
+      SC.propertyWillChange(this, keyName);
+    }
+    
+    if (cacheable) delete m.cache[keyName];
+    ret = func.call(this, keyName, value);
+    if (cacheable) m.cache[keyName] = ret;
+    if (watched) SC.propertyDidChange(this, keyName);
+    desc._suspended = oldSuspended;
+    return ret;
+  };
+}
+
+var Cp = ComputedProperty.prototype;
+
+/**
+  Call on a computed property to set it into cacheable mode.  When in this
+  mode the computed property will automatically cache the return value of 
+  your function until one of the dependent keys changes.
+
+  @param {Boolean} aFlag optional set to false to disable cacheing
+  @returns {SC.ComputedProperty} receiver
+*/
+Cp.cacheable = function(aFlag) {
+  this._cacheable = aFlag!==false;
+  return this;
+};
+
+/**
+  Sets the dependent keys on this computed property.  Pass any number of 
+  arguments containing key paths that this computed property depends on.
+  
+  @param {String} path... zero or more property paths
+  @returns {SC.ComputedProperty} receiver
+*/
+Cp.property = function() {
+  this._dependentKeys = a_slice.call(arguments);
+  return this;
+};
+
+/** @private - impl descriptor API */
+Cp.setup = function(obj, keyName, value) {
+  CP_DESC.get = mkCpGetter(keyName, this);
+  CP_DESC.set = mkCpSetter(keyName, this);
+  o_defineProperty(obj, keyName, CP_DESC);
+  CP_DESC.get = CP_DESC.set = null;
+  addDependentKeys(this, obj, keyName);
+};
+
+/** @private - impl descriptor API */
+Cp.teardown = function(obj, keyName) {
+  var keys = this._dependentKeys, 
+      len  = keys ? keys.length : 0;
+  for(var idx=0;idx<len;idx++) removeDependentKey(obj, keyName, keys[idx]);
+
+  if (this._cacheable) delete meta(obj).cache[keyName];
+  
+  return null; // no value to restore
+};
+
+/** @private - impl descriptor API */
+Cp.didChange = function(obj, keyName) {
+  if (this._cacheable && (this._suspended !== obj)) {
+    delete meta(obj).cache[keyName];
+  }
+};
+
+/** @private - impl descriptor API */
+Cp.get = function(obj, keyName) {
+  var ret, cache;
+  
+  if (this._cacheable) {
+    cache = meta(obj).cache;
+    if (keyName in cache) return cache[keyName];
+    ret = cache[keyName] = this.func.call(obj, keyName);
+  } else {
+    ret = this.func.call(obj, keyName);
+  }
+  return ret ;
+};
+
+/** @private - impl descriptor API */
+Cp.set = function(obj, keyName, value) {
+  var cacheable = this._cacheable;
+  
+  var m = meta(obj, cacheable),
+      watched = (m.source===obj) && m.watching[keyName]>0,
+      ret, oldSuspended, lastSetValues;
+
+  oldSuspended = this._suspended;
+  this._suspended = obj;
+
+  watched = watched && m.lastSetValues[keyName]!==guidFor(value);
+  if (watched) {
+    m.lastSetValues[keyName] = guidFor(value);
+    SC.propertyWillChange(obj, keyName);
+  }
+  
+  if (cacheable) delete m.cache[keyName];
+  ret = this.func.call(obj, keyName, value);
+  if (cacheable) m.cache[keyName] = ret;
+  if (watched) SC.propertyDidChange(obj, keyName);
+  this._suspended = oldSuspended;
+  return ret;
+};
+
+Cp.val = function(obj, keyName) {
+  return meta(obj, false).values[keyName];
+};
+
+if (!SC.platform.hasPropertyAccessors) {
+  Cp.setup = function(obj, keyName, value) {
+    obj[keyName] = undefined; // so it shows up in key iteration
+    addDependentKeys(this, obj, keyName);
+  };
+  
+} else if (!USE_ACCESSORS) {
+  Cp.setup = function(obj, keyName) {
+    // throw exception if not using SC.get() and SC.set() when supported
+    o_defineProperty(obj, keyName, CP_DESC);
+    addDependentKeys(this, obj, keyName);
+  };
+} 
+
+/**
+  This helper returns a new property descriptor that wraps the passed 
+  computed property function.  You can use this helper to define properties
+  with mixins or via SC.defineProperty().
+  
+  The function you pass will be used to both get and set property values.
+  The function should accept two parameters, key and value.  If value is not
+  undefined you should set the value first.  In either case return the 
+  current value of the property.
+  
+  @param {Function} func
+    The computed property function.
+    
+  @returns {SC.ComputedProperty} property descriptor instance
+*/
+SC.computed = function(func) {
+  return new ComputedProperty(func);
+};
+
+})({});
+
+
+(function(exports) {
+// ==========================================================================
+// Project:  SproutCore Metal
+// Copyright: ©2011 Strobe Inc. and contributors.
+// License:   Licensed under MIT license (see license.js)
+// ==========================================================================
+/*globals sc_assert */
+
+require('sproutcore-metal/core');
+require('sproutcore-metal/platform');
+require('sproutcore-metal/utils');
+
+var o_create = SC.platform.create;
+var meta = SC.meta;
+var guidFor = SC.guidFor;
+var array_Slice = Array.prototype.slice;
+
+/**
+  The event system uses a series of nested hashes to store listeners on an
+  object. When a listener is registered, or when an event arrives, these
+  hashes are consulted to determine which target and action pair to invoke.
+
+  The hashes are stored in the object's meta hash, and look like this:
+
+      // Object's meta hash
+      {
+        listeners: {               // variable name: `listenerSet`
+          "foo:changed": {         // variable name: `targetSet`
+            [targetGuid]: {        // variable name: `actionSet`
+              [methodGuid]: {      // variable name: `action`
+                target: [Object object],
+                method: [Function function],
+                xform: [Function function]
+              }
+            }
+          }
+        }
+      }
+
+*/
+
+var metaPath = SC.metaPath;
+
+// Gets the set of all actions, keyed on the guid of each action's
+// method property.
+function actionSetFor(obj, eventName, target, writable) {
+  var targetGuid = guidFor(target);
+  return metaPath(obj, ['listeners', eventName, targetGuid], writable);
+}
+
+// Gets the set of all targets, keyed on the guid of each action's
+// target property.
+function targetSetFor(obj, eventName) {
+  var listenerSet = meta(obj, false).listeners;
+  if (!listenerSet) { return false; }
+
+  return listenerSet[eventName] || false;
+}
+
+// TODO: This knowledge should really be a part of the
+// meta system.
+var SKIP_PROPERTIES = { __sc_source__: true };
+
+// For a given target, invokes all of the methods that have
+// been registered as a listener.
+function invokeEvents(targetSet, params) {
+  // Iterate through all elements of the target set
+  for(var targetGuid in targetSet) {
+    if (SKIP_PROPERTIES[targetGuid]) { continue; }
+
+    var actionSet = targetSet[targetGuid];
+
+    // Iterate through the elements of the action set
+    for(var methodGuid in actionSet) {
+      if (SKIP_PROPERTIES[methodGuid]) { continue; }
+
+      var action = actionSet[methodGuid]
+      if (!action) { continue; }
+
+      // Extract target and method for each action
+      var method = action.method;
+      var target = action.target;
+
+      // If there is no target, the target is the object
+      // on which the event was fired.
+      if (!target) { target = params[0]; }
+      if ('string' === typeof method) { method = target[method]; }
+
+      // Listeners can provide an `xform` function, which can perform
+      // arbitrary transformations, such as changing the order of
+      // parameters.
+      //
+      // This is primarily used by sproutcore-runtime's observer system, which
+      // provides a higher level abstraction on top of events, including
+      // dynamically looking up current values and passing them into the
+      // registered listener.
+      var xform = action.xform;
+
+      if (xform) {
+        xform(target, method, params);
+      } else {
+        method.apply(target, params);
+      }
+    }
+  }
+}
+
+/**
+  The parameters passed to an event listener are not exactly the
+  parameters passed to an observer. if you pass an xform function, it will
+  be invoked and is able to translate event listener parameters into the form
+  that observers are expecting.
+*/
+function addListener(obj, eventName, target, method, xform) {
+  sc_assert("You must pass at least an object and event name to SC.addListener", !!obj && !!eventName);
+
+  if (!method && 'function' === typeof target) {
+    method = target;
+    target = null;
+  }
+
+  var actionSet = actionSetFor(obj, eventName, target, true),
+      methodGuid = guidFor(method), ret;
+
+  if (!actionSet[methodGuid]) {
+    actionSet[methodGuid] = { target: target, method: method, xform: xform };
+  } else {
+    actionSet[methodGuid].xform = xform; // used by observers etc to map params
+  }
+
+  if ('function' === typeof obj.didAddListener) {
+    obj.didAddListener(eventName, target, method);
+  }
+
+  return ret; // return true if this is the first listener.
+}
+
+function removeListener(obj, eventName, target, method) {
+  if (!method && 'function'===typeof target) {
+    method = target;
+    target = null;
+  }
+
+  var actionSet = actionSetFor(obj, eventName, target, true),
+      methodGuid = guidFor(method);
+
+  // we can't simply delete this parameter, because if we do, we might
+  // re-expose the property from the prototype chain.
+  if (actionSet && actionSet[methodGuid]) { actionSet[methodGuid] = null; }
+
+  if (obj && 'function'===typeof obj.didRemoveListener) {
+    obj.didRemoveListener(eventName, target, method);
+  }
+}
+
+// returns a list of currently watched events
+function watchedEvents(obj) {
+  var listeners = meta(obj, false).listeners, ret = [];
+
+  if (listeners) {
+    for(var eventName in listeners) {
+      if (!SKIP_PROPERTIES[eventName] && listeners[eventName]) {
+        ret.push(eventName);
+      }
+    }
+  }
+  return ret;
+}
+
+function sendEvent(obj, eventName) {
+  sc_assert("You must pass an object and event name to SC.sendEvent", !!obj && !!eventName);
+
+  // first give object a chance to handle it
+  if (obj !== SC && 'function' === typeof obj.sendEvent) {
+    obj.sendEvent.apply(obj, array_Slice.call(arguments, 1));
+  }
+
+  var targetSet = targetSetFor(obj, eventName);
+  if (!targetSet) { return false; }
+
+  invokeEvents(targetSet, arguments);
+  return true;
+}
+
+function hasListeners(obj, eventName) {
+  var targetSet = targetSetFor(obj, eventName);
+  if (!targetSet) { return false; }
+
+  for(var targetGuid in targetSet) {
+    if (SKIP_PROPERTIES[targetGuid] || !targetSet[targetGuid]) { continue; }
+
+    var actionSet = targetSet[targetGuid];
+
+    for(var methodGuid in actionSet) {
+      if (SKIP_PROPERTIES[methodGuid] || !actionSet[methodGuid]) { continue; }
+      return true; // stop as soon as we find a valid listener
+    }
+  }
+
+  // no listeners!  might as well clean this up so it is faster later.
+  var set = metaPath(obj, ['listeners'], true);
+  set[eventName] = null;
+
+  return false;
+}
+
+function listenersFor(obj, eventName) {
+  var targetSet = targetSetFor(obj, eventName), ret = [];
+  if (!targetSet) { return ret; }
+
+  var info;
+  for(var targetGuid in targetSet) {
+    if (SKIP_PROPERTIES[targetGuid] || !targetSet[targetGuid]) { continue; }
+
+    var actionSet = targetSet[targetGuid];
+
+    for(var methodGuid in actionSet) {
+      if (SKIP_PROPERTIES[methodGuid] || !actionSet[methodGuid]) { continue; }
+      info = actionSet[methodGuid];
+      ret.push([info.target, info.method]);
+    }
+  }
+
+  return ret;
+}
+
+SC.addListener = addListener;
+SC.removeListener = removeListener;
+SC.sendEvent = sendEvent;
+SC.hasListeners = hasListeners;
+SC.watchedEvents = watchedEvents;
+SC.listenersFor = listenersFor;
+
+})({});
+
+
+(function(exports) {
+// ==========================================================================
+// Project:  SproutCore Runtime
 // Copyright: ©2011 Strobe Inc. and contributors.
 // License:   Licensed under MIT license (see license.js)
 // ==========================================================================
@@ -3141,5 +4542,7 @@ require('sproutcore-metal/watching');
 require('sproutcore-metal/events');
 require('sproutcore-metal/observer');
 require('sproutcore-metal/mixin');
+require('sproutcore-metal/binding');
+require('sproutcore-metal/run_loop');
 
 })({});
