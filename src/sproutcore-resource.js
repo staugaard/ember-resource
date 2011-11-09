@@ -408,15 +408,18 @@
     getValue: function(instance) {
       if (SC.get(instance, 'isInitializing')) return;
 
-      var url = this.url(instance);
-      if (!url) return;
-
       var options = {
-        type: this.get('itemType'),
-        url: url
+        type: this.get('itemType')
       };
 
       if (this.get('parse')) options.parse = this.get('parse');
+
+      var url = this.url(instance);
+      if (url) {
+        options.url = url;
+      } else {
+        options.content = [];
+      }
 
       return this.get('type').create(options);
     },
