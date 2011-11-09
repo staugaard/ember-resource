@@ -111,6 +111,8 @@
     create: function(name, schema) {
       var definition = schema[name];
 
+      if (definition instanceof SC.Resource.AbstractSchemaItem) { return definition; }
+
       var type;
       if (definition === Number || definition === String || definition === Boolean || definition === Date || definition === Object) {
         definition = {type: definition};
