@@ -744,7 +744,26 @@
     // Turn this resource into a JSON object to be saved via AJAX. Override
     // this method to produce different syncing behavior.
     toJSON: function() {
-      return SC.copy(SC.get(this, 'data'));
+      var json = {};
+      var schemaItem, path, value;
+      for (var name in this.constructor.schema) {
+        if (this.constructor.schema.hasOwnProperty(name)) {
+          schemaItem = this.constructor.schema[name];
+          if (schemaItem instanceof SC.Resource.AbstractSchemaItem) {
+            if (path = schemaItem.get('path')) {
+              value = this.get(name);
+              if (value != null && SC.typeOf(value.toJSON) === 'function') {
+                value = value.toJSON();
+              }
+              if (value !== undefined) {
+                SC.Resource.deepSet(json, path, value);
+              }
+            }
+          }
+        }
+      }
+
+      return json;
     },
 
     isNew: function() {
