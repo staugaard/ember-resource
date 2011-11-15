@@ -749,9 +749,12 @@
       for (var name in this.constructor.schema) {
         if (this.constructor.schema.hasOwnProperty(name)) {
           schemaItem = this.constructor.schema[name];
-          if (schemaItem instanceof SC.Resource.AbstractSchemaItem) {
+          if (schemaItem instanceof SC.Resource.AbstractSchemaItem && !(schemaItem instanceof SC.Resource.HasOneRemoteSchemaItem)) {
             if (path = schemaItem.get('path')) {
               value = this.get(name);
+              if (schemaItem instanceof SC.Resource.HasManyInArraySchemaItem) {
+                value = value.map(function(item){ return item.get('id'); });
+              }
               if (value != null && SC.typeOf(value.toJSON) === 'function') {
                 value = value.toJSON();
               }
@@ -1069,7 +1072,13 @@
       if (SC.get(this, 'isExpired') && SC.get(this, 'hasArrayObservers')) {
         this.fetch();
       }
-    }.observes('isExpired', 'hasArrayObservers')
+    }.observes('isExpired', 'hasArrayObservers'),
+    
+    toJSON: function() {
+      return this.map(function(item) {
+        return item.toJSON();
+      })
+    }
   }, SC.Resource.Lifecycle.prototypeMixin);
 
   SC.ResourceCollection.reopenClass({
