@@ -1,6 +1,5 @@
 require 'bundler/setup'
 require 'pathname'
-Bundler.require
 
 
 namespace :jasmine do
@@ -58,4 +57,8 @@ desc "Run specs via server"
 task :jasmine => ['jasmine:server']
 
 
-task :default => 'jasmine:ci'
+require 'jshint/tasks'
+JSHint.config_path = 'jshint.yml'
+
+
+task :default => ['jshint', 'jasmine:ci']

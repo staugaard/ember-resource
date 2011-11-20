@@ -61,8 +61,6 @@ describe('associations', function() {
       var instance = Person.create({}, data);
       var address  = instance.get('address');
 
-      debugger
-
       expect(address instanceof Address).toBe(true);
       expect(address.get('street')).toBe('1 My Street');
       expect(address.get('zip')).toBe(12345);
