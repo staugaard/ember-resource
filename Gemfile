@@ -1,4 +1,4 @@
 source "http://rubygems.org"
 
-gem 'jasmine-headless-webkit'
-gem 'jasmine'
+gem 'jasmine', '1.1.0'
+gem 'rake'
