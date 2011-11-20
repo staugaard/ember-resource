@@ -1,4 +1,4 @@
-# SproutCore-Resource
+# SproutCore-Resource [![Build Status](https://secure.travis-ci.org/staugaard/sproutcore-resource.png)](http://travis-ci.org/staugaard/sproutcore-resource)
 
 A simple library to connect your SproutCore 2.0 application to JSON backends.
 
