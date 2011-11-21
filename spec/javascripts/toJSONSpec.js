@@ -1,4 +1,25 @@
 describe('toJSON', function() {
+  it('should use toJSON of each of the schema items', function() {
+    var Book = SC.Resource.define({
+      schema: {
+        id: Number,
+        title: String
+      }
+    });
+
+    var book = Book.create({id: 1, title: 'Rework'});
+
+    spyOn(Book.schema.id,    'toJSON').andReturn(1);
+    spyOn(Book.schema.title, 'toJSON').andReturn(undefined);
+
+    var json = book.toJSON();
+
+    expect(Book.schema.id.toJSON).toHaveBeenCalledWith(book);
+    expect(Book.schema.title.toJSON).toHaveBeenCalledWith(book);
+
+    expect(json).toEqual({id: 1});
+  });
+
   describe('nested objects', function() {
     var Address = SC.Resource.define({
       schema: {
