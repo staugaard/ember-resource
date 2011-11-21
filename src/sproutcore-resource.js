@@ -94,6 +94,10 @@
 
     property: function() {
       return this.propertyFunction.property.apply(this.propertyFunction, this.get('dependencies')).cacheable();
+    },
+
+    toJSON: function(instance) {
+      return undefined;
     }
   });
   SC.Resource.AbstractSchemaItem.reopenClass({
@@ -165,6 +169,10 @@
         value = value.toJSON();
       }
       SC.Resource.deepSet(data, this.get('path'), value);
+    },
+
+    toJSON: function(instance) {
+      return SC.get(instance, this.name);
     }
   });
 
@@ -244,6 +252,10 @@
       } else {
         return new Date(value);
       }
+    },
+    toJSON: function(instance) {
+      var value = SC.get(instance, this.name);
+      return value ? value.toJSON() : value;
     }
   });
 
@@ -293,6 +305,11 @@
       }
 
       SC.Resource.deepSet(data, this.get('path'), value);
+    },
+
+    toJSON: function(instance) {
+      var value = SC.get(instance, this.name);
+      return value ? value.toJSON() : value;
     }
   });
   SC.Resource.HasOneNestedSchemaItem.reopenClass({
@@ -469,6 +486,11 @@
     },
 
     setValue: function(instance, value) {
+    },
+
+    toJSON: function(instance) {
+      var value = SC.get(instance, this.name);
+      return value ? value.toJSON() : value;
     }
   });
   SC.Resource.HasManyNestedSchemaItem.reopenClass({
@@ -498,6 +520,11 @@
     },
 
     setValue: function(instance, value) {
+    },
+
+    toJSON: function(instance) {
+      var value = SC.get(instance, this.name);
+      return value ? value.mapProperty('id') : value;
     }
   });
   SC.Resource.HasManyInArraySchemaItem.reopenClass({
@@ -750,14 +777,10 @@
         if (this.constructor.schema.hasOwnProperty(name)) {
           schemaItem = this.constructor.schema[name];
           if (schemaItem instanceof SC.Resource.AbstractSchemaItem) {
-            if (path = schemaItem.get('path')) {
-              value = this.get(name);
-              if (value != null && SC.typeOf(value.toJSON) === 'function') {
-                value = value.toJSON();
-              }
-              if (value !== undefined) {
-                SC.Resource.deepSet(json, path, value);
-              }
+            path = schemaItem.get('path');
+            value = schemaItem.toJSON(this);
+            if (value !== undefined) {
+              SC.Resource.deepSet(json, path, value);
             }
           }
         }
@@ -1069,7 +1092,13 @@
       if (SC.get(this, 'isExpired') && SC.get(this, 'hasArrayObservers')) {
         this.fetch();
       }
-    }.observes('isExpired', 'hasArrayObservers')
+    }.observes('isExpired', 'hasArrayObservers'),
+
+    toJSON: function() {
+      return this.map(function(item) {
+        return item.toJSON();
+      })
+    }
   }, SC.Resource.Lifecycle.prototypeMixin);
 
   SC.ResourceCollection.reopenClass({
