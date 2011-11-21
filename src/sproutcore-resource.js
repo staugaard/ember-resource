@@ -797,7 +797,8 @@
       if (!SC.get(this, 'isSavable')) return false;
 
       var ajaxOptions = {
-        data: this.toJSON(),
+        contentType: 'application/json',
+        data: JSON.stringify(this.toJSON()),
         resource: this
       };
 
