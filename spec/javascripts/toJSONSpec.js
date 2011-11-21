@@ -1,5 +1,5 @@
 describe('toJSON', function() {
-  describe('of nested objects', function() {
+  describe('nested objects', function() {
     var Address = SC.Resource.define({
       schema: {
         city: String
@@ -41,7 +41,7 @@ describe('toJSON', function() {
     });
   });
 
-  describe('of remote has one associations', function() {
+  describe('remote has one associations', function() {
     var Address = SC.Resource.define({
       schema: {
         id:   Number,
@@ -68,4 +68,62 @@ describe('toJSON', function() {
 
   });
 
+  describe('remote has many associations', function() {
+    var Book = SC.Resource.define({
+      schema: {
+        id: Number,
+        title: String
+      }
+    });
+
+    var Library = SC.Resource.define({
+      schema: {
+        name: String,
+
+        books: {
+          type: SC.ResourceCollection,
+          itemType: Book,
+          url: '/libraries/%@/books'
+        }
+      }
+    });
+
+    it('should not be included', function() {
+      var library = Library.create({name: 'The Robarts Library'});
+      SC.setPath(library, 'books.content', [{ id: 1, title: 'The Hobbit' }]);
+      expect(library.toJSON()).toEqual({ name: 'The Robarts Library' });
+    });
+  });
+
+  describe('has many in array associations', function() {
+    var Book = SC.Resource.define({
+      schema: {
+        id: Number,
+        title: String
+      }
+    });
+
+    var Library = SC.Resource.define({
+      schema: {
+        name: String,
+
+        books: {
+          type: SC.ResourceCollection,
+          itemType: Book
+        }
+      }
+    });
+
+    it('should include the ids of the items', function() {
+      var library = Library.create({}, {
+        name: 'The Robarts Library',
+        books_ids: [1,2,3]
+      });
+
+      expect(library.toJSON()).toEqual({
+        name: 'The Robarts Library',
+        books_ids: [1,2,3]
+      });
+    })
+  });
 });
