@@ -911,7 +911,7 @@
         if (SC.none(this.identityMap)) {
             return null;
         }
-        return this.identityMap[id];
+        return this.identityMap[id] || null;
     },
 
     // Create an instance of this resource. If `options` includes an

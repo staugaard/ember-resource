@@ -41,7 +41,7 @@ describe('A Resource instance', function() {
 
     it('should not have a URL', function() {
       expect(model.resourceURL()).toBeUndefined();
-    })
+    });
   });
 
   it('allows setting of properties not in the schema during creation', function() {
@@ -78,6 +78,20 @@ describe('A Resource instance', function() {
       expect(model.get('name')).toBe('boo');
       expect(model.get('subject')).toBe('bar');
     });
+  });
+
+  describe('finding objects via find', function() {
+      beforeEach(function() {
+          model = Model.create({id: 1});
+      });
+
+      it('should return model for the given primary key if it exists', function() {
+          expect(Model.find(1)).toBe(model);
+      });
+
+      it('should return null if no model with the given primary key exists', function() {
+          expect(Model.find(2)).toBeNull();
+      });
   });
 
 });
