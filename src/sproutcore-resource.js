@@ -936,7 +936,7 @@
 
         delete options.data;
 
-        SC.beginPropertyChanges(this);
+        SC.beginPropertyChanges(instance);
         var mixin = {};
         var hasMixin = false;
         for (var name in options) {
@@ -952,7 +952,7 @@
         if (hasMixin) {
           instance.reopen(mixin);
         }
-        SC.endPropertyChanges(this);
+        SC.endPropertyChanges(instance);
 
         return instance;
       } else {
