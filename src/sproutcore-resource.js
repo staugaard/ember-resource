@@ -935,7 +935,24 @@
         }
 
         delete options.data;
-        instance.setProperties(options);
+
+        SC.beginPropertyChanges(this);
+        var mixin = {};
+        var hasMixin = false;
+        for (var name in options) {
+          if (options.hasOwnProperty(name)) {
+            if (this.schema[name]) {
+              instance.set(name, options[name]);
+            } else {
+              mixin[name] = options[name];
+              hasMixin = true;
+            }
+          }
+        }
+        if (hasMixin) {
+          instance.reopen(mixin);
+        }
+        SC.endPropertyChanges(this);
 
         return instance;
       } else {

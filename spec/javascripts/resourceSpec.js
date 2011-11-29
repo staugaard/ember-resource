@@ -45,9 +45,42 @@ describe('A Resource instance', function() {
   });
 
   it('allows setting of properties not in the schema during creation', function() {
-    model = Model.create({ undefinedProperty: 'foo' });
+    model = Model.create({
+      undefinedProperty: 'foo'
+    });
+
     expect(model.get('undefinedProperty')).toEqual('foo');
   });
+
+  it('allows setting functions during creation', function() {
+    model = Model.create({
+      undefinedProperty: function() { return 'foo'; }
+    });
+
+    expect(SC.typeOf(model.undefinedProperty)).toEqual('function');
+    expect(model.undefinedProperty()).toEqual('foo');
+  });
+
+  it('allows setting observers during creation', function() {
+    var observerDidFire = false;
+    model = Model.create({
+      myObserver: function() { observerDidFire = true; }.observes('foo')
+    });
+    observerDidFire = false;
+    model.set('foo', 'new value');
+
+    expect(observerDidFire).toBe(true);
+  });
+
+  it('allows setting computed properties during creation', function() {
+    model = Model.create({
+      undefinedProperty: function() { return this.get('foo') + '!'; }.property('foo')
+    });
+    model.set('foo', 'foo');
+
+    expect(model.get('undefinedProperty')).toEqual('foo!');
+  });
+
 
   it('allows setting of properties not in the schema during creation, considering paths', function() {
 
