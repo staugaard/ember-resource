@@ -116,6 +116,12 @@ describe('Auto fetching', function() {
         });
       });
 
+      it('should return a resolved deferred', function() {
+        var result = people.fetch();
+        expect(result).not.toBeUndefined();
+        expect(result.state()).toBe('resolved');
+      });
+
       describe('and expired', function() {
         beforeEach(function() {
           runs(function() {

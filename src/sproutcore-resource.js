@@ -736,7 +736,7 @@
     didSave: function() {},
 
     fetch: function() {
-      if (!SC.get(this, 'isFetchable')) return null;
+      if (!SC.get(this, 'isFetchable')) return $.when();
 
       var url = this.resourceURL();
 
@@ -1043,7 +1043,7 @@
     isSCResourceCollection: true,
     type: SC.required(),
     fetch: function() {
-      if (!SC.get(this, 'isFetchable')) return;
+      if (!SC.get(this, 'isFetchable')) return $.when();
 
       if (!this.prePopulated) {
         var self = this;
