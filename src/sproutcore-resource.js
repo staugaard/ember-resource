@@ -670,6 +670,10 @@
         return (SC.get(this, 'resourceState')) === SC.Resource.Lifecycle.FETCHING;
       }.property('resourceState').cacheable(),
 
+      isFetched: function() {
+        return (SC.get(this, 'resourceState')) === SC.Resource.Lifecycle.FETCHED;
+      }.property('resourceState').cacheable(),
+
       isSavable: function() {
         var state = SC.get(this, 'resourceState');
         var unsavableState = [
