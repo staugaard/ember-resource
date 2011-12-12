@@ -119,6 +119,15 @@ describe('Saving a resource instance', function() {
         expect(resource.get('subject')).toBe('the subject');
         expect(resource.get('name')).toBe('foo');
       });
+
+      it('should not update with the data if you pass the update: false option', function() {
+        resource.save({update: false});
+        server.respond();
+        expect(resource.get('id')).toBeUndefined();
+        expect(resource.get('subject')).toBeUndefined();
+        expect(resource.get('name')).toBe('foo');
+      })
     });
+
   });
 });

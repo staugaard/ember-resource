@@ -797,7 +797,8 @@
       return !SC.get(this, 'id');
     }.property('id').cacheable(),
 
-    save: function() {
+    save: function(options) {
+      options = options || {};
       if (!SC.get(this, 'isSavable')) return false;
 
       var ajaxOptions = {
@@ -830,7 +831,7 @@
           }
         }
 
-        if (SC.typeOf(data) === 'object') {
+        if (options.update !== false && SC.typeOf(data) === 'object') {
           self.updateWithApiData(data);
         }
       });
