@@ -912,6 +912,13 @@
       return this;
     },
 
+    find: function(id) {
+        if (SC.none(this.identityMap)) {
+            return null;
+        }
+        return this.identityMap[id] || null;
+    },
+
     // Create an instance of this resource. If `options` includes an
     // `id`, first check the identity map and return the existing resource
     // with that ID if found.
