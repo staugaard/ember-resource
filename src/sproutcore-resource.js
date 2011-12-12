@@ -316,11 +316,12 @@
     create: function(name, schema) {
       var definition = schema[name];
       var instance = this._super.apply(this, arguments);
+      var theType = definition.type.schema.hasOwnProperty('id') ? definition.type.schema['id'].get('theType') : Number;
       instance.set('path', definition.path || name);
 
       var id_name = name + '_id';
       if (!schema[id_name]) {
-        schema[id_name] = {type: Number, association: instance };
+        schema[id_name] = {type: theType, association: instance };
         schema[id_name] = SC.Resource.HasOneNestedIdSchemaItem.create(id_name, schema);
       }
 
@@ -329,7 +330,6 @@
   });
   SC.Resource.HasOneNestedIdSchemaItem = SC.Resource.AbstractSchemaItem.extend({
     fetchable: true,
-    theType: Number,
     getValue: function(instance) {
       return instance.getPath(this.get('path'));
     },
@@ -341,6 +341,7 @@
     create: function(name, schema) {
       var definition = schema[name];
       var instance = this._super.apply(this, arguments);
+      instance.set('theType', definition.type);
       instance.set('association', definition.association);
       instance.set('path', definition.association.get('path') + '.id');
       return instance;
@@ -370,10 +371,11 @@
       var definition = schema[name];
       var instance = this._super.apply(this, arguments);
       var path = definition.path || name + '_id';
+      var theType = definition.type.schema.hasOwnProperty('id') ? definition.type.schema['id'].get('theType') : Number;
       instance.set('path', path);
 
       if (!schema[path]) {
-        schema[path] = Number;
+        schema[path] = theType;
         schema[path] = SC.Resource.SchemaItem.create(path, schema);
       }
 
