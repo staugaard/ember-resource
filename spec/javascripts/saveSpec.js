@@ -72,53 +72,53 @@ describe('Saving a resource instance', function() {
   });
 
   describe('updating from response', function() {
-      var resource;
+    var resource;
 
-      describe('with default Location header parsing', function() {
-        beforeEach(function() {
-          server.respondWith('POST', '/people', [201, {'Location': 'http://example.com/people/25.json'}, '']);
-          resource = Model.create({ name: 'foo' });
-        });
-
-        it('should update with the id from the Location header', function() {
-          resource.save();
-          server.respond();
-          expect(resource.get('id')).toBe(25);
-        });
+    describe('with default Location header parsing', function() {
+      beforeEach(function() {
+        server.respondWith('POST', '/people', [201, {'Location': 'http://example.com/people/25.json'}, '']);
+        resource = Model.create({ name: 'foo' });
       });
 
-      describe('with a custom Location header parser', function() {
-        beforeEach(function() {
-          server.respondWith('POST', '/people', [201, {'Location': 'http://example.com/people/25.json'}, '']);
-          Model.reopenClass({
-            idFromURL: function(url) {
-              return 100;
-            }
-          });
+      it('should update with the id from the Location header', function() {
+        resource.save();
+        server.respond();
+        expect(resource.get('id')).toBe(25);
+      });
+    });
 
-          resource = Model.create({ name: 'foo' });
+    describe('with a custom Location header parser', function() {
+      beforeEach(function() {
+        server.respondWith('POST', '/people', [201, {'Location': 'http://example.com/people/25.json'}, '']);
+        Model.reopenClass({
+          idFromURL: function(url) {
+            return 100;
+          }
         });
 
-        it('should update with the id from the custom parser', function() {
-          resource.save();
-          server.respond();
-          expect(resource.get('id')).toBe(100);
-        });
+        resource = Model.create({ name: 'foo' });
       });
 
-      describe('from a response body', function() {
-        beforeEach(function() {
-          server.respondWith('POST', '/people', [201, { "Content-Type": "application/json" }, '{ "id": 1, "subject": "the subject" }']);
-          resource = Model.create({ name: 'foo' });
-        });
-
-        it('should update with the data given', function() {
-          resource.save();
-          server.respond();
-          expect(resource.get('id')).toBe(1);
-          expect(resource.get('subject')).toBe('the subject');
-          expect(resource.get('name')).toBe('foo');
-        });
+      it('should update with the id from the custom parser', function() {
+        resource.save();
+        server.respond();
+        expect(resource.get('id')).toBe(100);
       });
+    });
+
+    describe('from a response body', function() {
+      beforeEach(function() {
+        server.respondWith('POST', '/people', [201, { "Content-Type": "application/json" }, '{ "id": 1, "subject": "the subject" }']);
+        resource = Model.create({ name: 'foo' });
+      });
+
+      it('should update with the data given', function() {
+        resource.save();
+        server.respond();
+        expect(resource.get('id')).toBe(1);
+        expect(resource.get('subject')).toBe('the subject');
+        expect(resource.get('name')).toBe('foo');
+      });
+    });
   });
 });
