@@ -2,7 +2,7 @@ describe('Lifecycle', function() {
   var Person, server;
 
   beforeEach(function() {
-    Person = SC.Resource.define({
+    Person = Ember.Resource.define({
       url: '/people',
       schema: {
         id:       Number,
@@ -27,7 +27,7 @@ describe('Lifecycle', function() {
     });
 
     it('should be in the UNFETCHED state', function() {
-      expect(person.get('resourceState')).toBe(SC.Resource.Lifecycle.UNFETCHED);
+      expect(person.get('resourceState')).toBe(Ember.Resource.Lifecycle.UNFETCHED);
     });
 
     it('should not be expired', function() {
@@ -51,7 +51,7 @@ describe('Lifecycle', function() {
     });
 
     it('should put the object in a FETCHING state', function() {
-      expect(person.get('resourceState')).toBe(SC.Resource.Lifecycle.FETCHING);
+      expect(person.get('resourceState')).toBe(Ember.Resource.Lifecycle.FETCHING);
     });
 
     describe('is done', function() {
@@ -60,7 +60,7 @@ describe('Lifecycle', function() {
       });
 
       it('should put the object in a FETCHED state when the fetch is done', function() {
-        expect(person.get('resourceState')).toBe(SC.Resource.Lifecycle.FETCHED);
+        expect(person.get('resourceState')).toBe(Ember.Resource.Lifecycle.FETCHED);
       });
 
       it('should set expiry in 5 minutes', function() {
@@ -79,7 +79,7 @@ describe('Lifecycle', function() {
 
     beforeEach(function() {
       person = Person.create({id: 1});
-      SC.Resource.Lifecycle.clock.tick();
+      Ember.Resource.Lifecycle.clock.tick();
     });
 
     it('should be expired with an expireAt in the past', function() {
@@ -87,7 +87,7 @@ describe('Lifecycle', function() {
       expiry.setFullYear(expiry.getFullYear() - 1);
       person.set('expireAt', expiry);
       expect(person.get('isExpired')).toBe(true);
-      expect(person.get('resourceState')).toBe(SC.Resource.Lifecycle.EXPIRED);
+      expect(person.get('resourceState')).toBe(Ember.Resource.Lifecycle.EXPIRED);
     });
 
     it('should be expired with an expireAt in the future', function() {
@@ -95,7 +95,7 @@ describe('Lifecycle', function() {
       expiry.setFullYear(expiry.getFullYear() + 1);
       person.set('expireAt', expiry);
       expect(person.get('isExpired')).toBe(false);
-      expect(person.get('resourceState')).toBe(SC.Resource.Lifecycle.UNFETCHED);
+      expect(person.get('resourceState')).toBe(Ember.Resource.Lifecycle.UNFETCHED);
     });
 
     it('should expire when "expire" is called', function() {

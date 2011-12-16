@@ -2,7 +2,7 @@ describe('Auto fetching', function() {
   var Person, server;
 
   beforeEach(function() {
-    Person = SC.Resource.define({
+    Person = Ember.Resource.define({
       url: '/people',
       schema: {
         id:       Number,
@@ -11,7 +11,7 @@ describe('Auto fetching', function() {
     });
 
     server = sinon.fakeServer.create();
-    SC.Resource.Lifecycle.clock.tick();
+    Ember.Resource.Lifecycle.clock.tick();
   });
 
   afterEach(function() {
@@ -62,13 +62,13 @@ describe('Auto fetching', function() {
       server.respondWith("GET", "/people",
                          [200, { "Content-Type": "application/json" },
                          '[{ "id": 1, "name": "Mick Staugaard" }]']);
-      people = SC.ResourceCollection.create({type: Person});
+      people = Ember.ResourceCollection.create({type: Person});
       server.respond();
     });
 
     it('should not fetch on creation', function() {
       var hasFetched = false;
-      var TestCollection = SC.ResourceCollection.extend({
+      var TestCollection = Ember.ResourceCollection.extend({
         fetch: function() {
           hasFetched = true;
         }

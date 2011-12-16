@@ -1,5 +1,5 @@
 describe('associations', function() {
-  var Address = SC.Resource.define({
+  var Address = Ember.Resource.define({
     schema: {
       id:     Number,
       street: String,
@@ -28,7 +28,7 @@ describe('associations', function() {
     });
 
     it('should use embedded data', function() {
-      var Person = SC.Resource.define({
+      var Person = Ember.Resource.define({
         schema: {
           name: String,
           address: {type: Address, nested: true}
@@ -48,7 +48,7 @@ describe('associations', function() {
     });
 
     it('should support path overriding', function() {
-      var Person = SC.Resource.define({
+      var Person = Ember.Resource.define({
         schema: {
           name: String,
           address: {type: Address, nested: true, path: 'addresses.home'}
@@ -71,7 +71,7 @@ describe('associations', function() {
     });
 
     it('should have an id accessor', function() {
-      var Person = SC.Resource.define({
+      var Person = Ember.Resource.define({
         schema: {
           name: String,
           address: {type: Address, nested: true}
@@ -100,17 +100,17 @@ describe('associations', function() {
     describe('with url', function() {
 
       beforeEach(function() {
-        Person = SC.Resource.define({
+        Person = Ember.Resource.define({
           schema: {
             id:   Number,
             name: String,
             home_addresses: {
-              type: SC.ResourceCollection,
+              type: Ember.ResourceCollection,
               itemType: Address,
               url: '/people/%@/addresses'
             },
             work_addresses: {
-              type: SC.ResourceCollection,
+              type: Ember.ResourceCollection,
               itemType: Address,
               url: function(instance) {
                 return '/people/' + instance.get('id') + '/addresses';
@@ -125,7 +125,7 @@ describe('associations', function() {
         var homeAddresses = person.get('home_addresses');
         
         expect(homeAddresses).toBeDefined();
-        expect(homeAddresses instanceof SC.ResourceCollection).toBe(true);
+        expect(homeAddresses instanceof Ember.ResourceCollection).toBe(true);
         expect(homeAddresses.type).toBe(Address);
         expect(homeAddresses.url).toBe('/people/1/addresses');
       });
@@ -135,7 +135,7 @@ describe('associations', function() {
         var workAddresses = person.get('work_addresses');
         
         expect(workAddresses).toBeDefined();
-        expect(workAddresses instanceof SC.ResourceCollection).toBe(true);
+        expect(workAddresses instanceof Ember.ResourceCollection).toBe(true);
         expect(workAddresses.type).toBe(Address);
         expect(workAddresses.url).toBe('/people/1/addresses');
       });
@@ -143,16 +143,16 @@ describe('associations', function() {
 
     describe('nested', function() {
       beforeEach(function() {
-        Person = SC.Resource.define({
+        Person = Ember.Resource.define({
           schema: {
             name: String,
             home_addresses: {
-              type: SC.ResourceCollection,
+              type: Ember.ResourceCollection,
               itemType: Address,
               nested: true
             },
             work_addresses: {
-              type: SC.ResourceCollection,
+              type: Ember.ResourceCollection,
               itemType: Address,
               nested: true,
               path: 'office_addresses'
@@ -180,7 +180,7 @@ describe('associations', function() {
         var homeAddresses = person.get('home_addresses');
 
         expect(homeAddresses).toBeDefined();
-        expect(homeAddresses instanceof SC.ResourceCollection).toBe(true);
+        expect(homeAddresses instanceof Ember.ResourceCollection).toBe(true);
         expect(homeAddresses.type).toBe(Address);
         expect(homeAddresses.get('length')).toBe(2);
 
@@ -221,11 +221,11 @@ describe('associations', function() {
 
     describe('in array', function() {
       beforeEach(function() {
-        Person = SC.Resource.define({
+        Person = Ember.Resource.define({
           schema: {
             name: String,
             home_addresses: {
-              type: SC.ResourceCollection,
+              type: Ember.ResourceCollection,
               itemType: Address,
               path: 'home_address_ids'
             }

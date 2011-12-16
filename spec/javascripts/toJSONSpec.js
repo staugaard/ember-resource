@@ -1,6 +1,6 @@
 describe('toJSON', function() {
   it('should use toJSON of each of the schema items', function() {
-    var Book = SC.Resource.define({
+    var Book = Ember.Resource.define({
       schema: {
         id: Number,
         title: String
@@ -21,13 +21,13 @@ describe('toJSON', function() {
   });
 
   describe('nested objects', function() {
-    var Address = SC.Resource.define({
+    var Address = Ember.Resource.define({
       schema: {
         city: String
       }
     });
 
-    var Person = SC.Resource.define({
+    var Person = Ember.Resource.define({
       schema: {
         id:   Number,
         name: String,
@@ -50,8 +50,8 @@ describe('toJSON', function() {
           newCity = 'Liverpool',
           newName = 'Smit Johnson';
 
-      SC.setPath(person, 'address.city', newCity);
-      SC.set(person, 'name', newName);
+      Ember.setPath(person, 'address.city', newCity);
+      Ember.set(person, 'name', newName);
 
       var json = person.toJSON();
 
@@ -63,14 +63,14 @@ describe('toJSON', function() {
   });
 
   describe('remote has one associations', function() {
-    var Address = SC.Resource.define({
+    var Address = Ember.Resource.define({
       schema: {
         id:   Number,
         city: String
       }
     });
 
-    var Person = SC.Resource.define({
+    var Person = Ember.Resource.define({
       schema: {
         id:   Number,
         name: String,
@@ -90,19 +90,19 @@ describe('toJSON', function() {
   });
 
   describe('remote has many associations', function() {
-    var Book = SC.Resource.define({
+    var Book = Ember.Resource.define({
       schema: {
         id: Number,
         title: String
       }
     });
 
-    var Library = SC.Resource.define({
+    var Library = Ember.Resource.define({
       schema: {
         name: String,
 
         books: {
-          type: SC.ResourceCollection,
+          type: Ember.ResourceCollection,
           itemType: Book,
           url: '/libraries/%@/books'
         }
@@ -111,25 +111,25 @@ describe('toJSON', function() {
 
     it('should not be included', function() {
       var library = Library.create({name: 'The Robarts Library'});
-      SC.setPath(library, 'books.content', [{ id: 1, title: 'The Hobbit' }]);
+      Ember.setPath(library, 'books.content', [{ id: 1, title: 'The Hobbit' }]);
       expect(library.toJSON()).toEqual({ name: 'The Robarts Library' });
     });
   });
 
   describe('has many in array associations', function() {
-    var Book = SC.Resource.define({
+    var Book = Ember.Resource.define({
       schema: {
         id: Number,
         title: String
       }
     });
 
-    var Library = SC.Resource.define({
+    var Library = Ember.Resource.define({
       schema: {
         name: String,
 
         books: {
-          type: SC.ResourceCollection,
+          type: Ember.ResourceCollection,
           itemType: Book
         }
       }

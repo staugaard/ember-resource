@@ -2,7 +2,7 @@ describe('A Resource instance', function() {
   var Model, model, server;
 
   beforeEach(function() {
-    Model = SC.Resource.define({
+    Model = Ember.Resource.define({
       schema: {
         id:       Number,
         name:     String,
@@ -57,7 +57,7 @@ describe('A Resource instance', function() {
       undefinedProperty: function() { return 'foo'; }
     });
 
-    expect(SC.typeOf(model.undefinedProperty)).toEqual('function');
+    expect(Ember.typeOf(model.undefinedProperty)).toEqual('function');
     expect(model.undefinedProperty()).toEqual('foo');
   });
 
@@ -84,7 +84,7 @@ describe('A Resource instance', function() {
 
   it('allows setting of properties not in the schema during creation, considering paths', function() {
 
-    Model = SC.Resource.define({
+    Model = Ember.Resource.define({
       schema: {
         id:       Number,
         name:     String,

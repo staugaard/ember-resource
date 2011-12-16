@@ -3,7 +3,7 @@ describe('schema definition', function() {
     var Model;
 
     beforeEach(function() {
-      Model = SC.Resource.define({
+      Model = Ember.Resource.define({
         schema: {
           id:       {type: Number, path: 'somewhere.deep.id'},
           size:     {type: Number},
@@ -48,14 +48,14 @@ describe('schema definition', function() {
     var Model, Person, Address;
 
     beforeEach(function() {
-      Address = SC.Resource.define({
+      Address = Ember.Resource.define({
         schema: {
           street: String,
           zip:    Number
         }
       });
 
-      Model = SC.Resource.define({
+      Model = Ember.Resource.define({
         schema: {
           home_address:  {type: Address},
           work_address:  {type: Address, path: 'work_addr_id'},
@@ -86,14 +86,14 @@ describe('schema definition', function() {
     it('should create an *_id attribute for nested associations', function() {
       expect(Model.schema.other_address).toBeDefined();
       expect(Model.schema.other_address_id).toBeDefined();
-      expect(Model.schema.other_address_id instanceof SC.Resource.HasOneNestedIdSchemaItem).toBe(true);
+      expect(Model.schema.other_address_id instanceof Ember.Resource.HasOneNestedIdSchemaItem).toBe(true);
       expect(Model.schema.other_address_id.get('association')).toBe(Model.schema.other_address);
       expect(Model.schema.other_address_id.get('path')).toBe('other_address.id');
     });
   });
 
   it('should create Number properties', function() {
-    var Model = SC.Resource.define({
+    var Model = Ember.Resource.define({
       schema: {
         id:   Number,
         size: Number
@@ -122,7 +122,7 @@ describe('schema definition', function() {
   });
 
   it('should create String properties', function() {
-    var Model = SC.Resource.define({
+    var Model = Ember.Resource.define({
       schema: {
         id:   String,
         size: String
@@ -146,7 +146,7 @@ describe('schema definition', function() {
     var date = new Date();
     var dateString = date.toJSON();
     
-    var Model = SC.Resource.define({
+    var Model = Ember.Resource.define({
       schema: {
         createdAt: Date,
         updatedAt: Date
@@ -170,7 +170,7 @@ describe('schema definition', function() {
   });
 
   it('should create Boolean properties', function() {
-    var Model = SC.Resource.define({
+    var Model = Ember.Resource.define({
       schema: {
         'public': Boolean,
         active:   Boolean,

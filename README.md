@@ -1,10 +1,10 @@
-# SproutCore-Resource [![Build Status](https://secure.travis-ci.org/staugaard/sproutcore-resource.png)](http://travis-ci.org/staugaard/sproutcore-resource)
+# Ember-Resource [![Build Status](https://secure.travis-ci.org/staugaard/ember-resource.png)](http://travis-ci.org/staugaard/ember-resource)
 
-A simple library to connect your SproutCore 2.0 application to JSON backends.
+A simple library to connect your Ember.js application to JSON backends.
 
 ## The Mandatory Todo Appplication
 
-I've created a modified version of the todo application that the SproutCore 2.0 Tutorial walks you through.
+I've created a modified version of the todo application that the Ember.js Tutorial walks you through.
 https://github.com/staugaard/sproutcore-resource-todos
 This version persists the todo items on the server using a very small sinatra application and MongoDB.
 
@@ -26,13 +26,13 @@ Assuming that /users/1 returns this JSON:
 You would use this user model:
 
 ```javascript
-MyApp.User = SC.Resource.define({
+MyApp.User = Ember.Resource.define({
   url: '/users',
   schema: {
     id:    Number,
     name:  String,
     blogs: {
-      type:     SC.ResourceCollection,
+      type:     Ember.ResourceCollection,
       itemType: 'MyApp.Blog',
       url:      '/users/%@/blogs'
     }
@@ -53,7 +53,7 @@ Assuming that /blogs/1 returns this JSON:
 You would use this blog model:
 
 ```javascript
-MyApp.Blog = SC.Resource.define({
+MyApp.Blog = Ember.Resource.define({
   url: '/blogs'
   schema: {
     id:    Number,
@@ -62,7 +62,7 @@ MyApp.Blog = SC.Resource.define({
       type: MyApp.User
     },
     posts: {
-      type:     SC.ResourceCollection,
+      type:     Ember.ResourceCollection,
       itemType: 'MyApp.Post',
       url:      '/blogs/%@/posts'
     }
@@ -84,7 +84,7 @@ Assuming that /posts/1 returns this JSON:
 You would use this post model:
 
 ```javascript
-MyApp.Post = SC.Resource.define({
+MyApp.Post = Ember.Resource.define({
   url: '/posts',
   schema: {
     id:    Number,
@@ -94,7 +94,7 @@ MyApp.Post = SC.Resource.define({
       type: MyApp.Blog
     },
     comments: {
-      type:     SC.ResourceCollection,
+      type:     Ember.ResourceCollection,
       itemType: 'MyApp.Comment',
       url:      '/posts/%@/comments'
     }
@@ -119,7 +119,7 @@ Assuming that /comments/1 returns this JSON:
 You would use this comment model:
 
 ```javascript
-MyApp.Comment = SC.Resource.define({
+MyApp.Comment = Ember.Resource.define({
   url: '/comments',
   schema: {
     id:   Number,

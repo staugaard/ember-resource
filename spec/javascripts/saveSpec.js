@@ -2,7 +2,7 @@ describe('Saving a resource instance', function() {
   var Model, model, server;
 
   beforeEach(function() {
-    Model = SC.Resource.define({
+    Model = Ember.Resource.define({
       schema: {
         id:       Number,
         name:     String,
@@ -16,7 +16,7 @@ describe('Saving a resource instance', function() {
 
   afterEach(function() {
     server.restore();
-    SC.Resource.errorHandler = null;
+    Ember.Resource.errorHandler = null;
   });
 
   describe('handling errors on save', function() {
@@ -26,7 +26,7 @@ describe('Saving a resource instance', function() {
 
     it('should pass a reference to the resource to the error handling function', function() {
       var spy = jasmine.createSpy();
-      SC.Resource.errorHandler = function(a, b, c, fourthArgument) {
+      Ember.Resource.errorHandler = function(a, b, c, fourthArgument) {
         spy(fourthArgument);
       };
 
@@ -45,12 +45,12 @@ describe('Saving a resource instance', function() {
       beforeEach(function() {
         server.respondWith('POST', '/people', [201, {}, '']);
         resource = Model.create({ name: 'foo' });
-        expect(resource.get('resourceState')).not.toBe(SC.Resource.Lifecycle.SAVING);
+        expect(resource.get('resourceState')).not.toBe(Ember.Resource.Lifecycle.SAVING);
       });
 
       it('should change to the saving state while saving', function() {
         expect(resource.save()).toBeTruthy();
-        expect(resource.get('resourceState')).toBe(SC.Resource.Lifecycle.SAVING);
+        expect(resource.get('resourceState')).toBe(Ember.Resource.Lifecycle.SAVING);
       });
 
       it('should change to previous state after save completes', function() {

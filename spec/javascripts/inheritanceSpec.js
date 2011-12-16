@@ -10,7 +10,7 @@ describe('Inheritance', function() {
   };
 
   beforeEach(function() {
-    Person = SC.Resource.define({
+    Person = Ember.Resource.define({
       url: '/people',
       schema: {
         id:       Number,
