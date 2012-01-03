@@ -1,6 +1,6 @@
 (function(undefined) {
 
-  var Ember = window.Ember || window.SC;
+  window.Ember = window.Ember || window.SC;
 
   var expandSchema, expandSchemaItem, createSchemaProperties,
       mergeSchemas;
