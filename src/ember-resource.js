@@ -627,6 +627,7 @@
     prototypeMixin: Ember.Mixin.create({
       expireIn: 60 * 5,
       resourceState: 0,
+      autoFetch: true,
 
       init: function() {
         this._super.apply(this, arguments);
@@ -638,6 +639,8 @@
           expireAt.setSeconds(expireAt.getSeconds() + Ember.get(self, 'expireIn'));
           Ember.set(self, 'expireAt', expireAt);
         };
+
+        this.toggleAutoFetchObservers();
 
         Ember.addListener(this, 'willFetch', this, function() {
           Ember.set(self, 'resourceState', Ember.Resource.Lifecycle.FETCHING);
@@ -665,6 +668,10 @@
         return state == Ember.Resource.Lifecycle.UNFETCHED || state === Ember.Resource.Lifecycle.EXPIRED;
       }.property('resourceState').cacheable(),
 
+      isAutoFetchable: function() {
+        return this.get('isFetchable') && this.get('autoFetch');
+      }.property('isFetchable', 'autoFetch').cacheable(),
+
       isInitializing: function() {
         return (Ember.get(this, 'resourceState') || Ember.Resource.Lifecycle.INITIALIZING) === Ember.Resource.Lifecycle.INITIALIZING;
       }.property('resourceState').cacheable(),
@@ -690,7 +697,7 @@
       }.property('resourceState').cacheable(),
 
       scheduleFetch: function() {
-        if (Ember.get(this, 'isFetchable')) {
+        if (Ember.get(this, 'isAutoFetchable')) {
           Ember.run.next(this, this.fetch);
         }
       },
@@ -701,6 +708,16 @@
           Ember.Resource.Lifecycle.clock.tick();
         });
       },
+
+      // If the resource is to be auto-fetched, clock ticks and changes to
+      // the resource's lifecycle states to the auto-fetch. If not, remove
+      // the observers so we don't pay a performance penalty.
+      toggleAutoFetchObservers: function() {
+        var toggle = $.proxy(this.get('autoFetch') ? Ember.addObserver : Ember.removeObserver, Ember);
+        toggle(Ember.Resource.Lifecycle, 'clock.now',     this, 'updateIsExpired');
+        toggle(this,                     'expireAt',      this, 'updateIsExpired');
+        toggle(this,                     'resourceState', this, 'updateIsExpired');
+      }.observes('autoFetch'),
 
       updateIsExpired: function() {
         var isExpired = Ember.get(this, 'resourceState') === Ember.Resource.Lifecycle.EXPIRED;
@@ -715,7 +732,7 @@
         if (isExpired !== Ember.get(this, 'isExpired')) {
           Ember.set(this, 'isExpired', isExpired);
         }
-      }.observes('Ember.Resource.Lifecycle.clock.now', 'expireAt', 'resourceState'),
+      },
 
       isExpired: function(name, value) {
         if (value) {
