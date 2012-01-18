@@ -81,6 +81,17 @@ describe('Auto fetching', function() {
         expect(person.fetch).not.toHaveBeenCalled();
       });
     });
+
+    it('should not observe clock ticks when autoFetch is false', function() {
+      spyOn(person, 'updateIsExpired');
+      person.set('autoFetch', false);
+
+      Ember.Resource.Lifecycle.clock.tick();
+      person.set('expireAt', new Date());
+      person.set('resourceState', Ember.Resource.Lifecycle.DESTOYING);
+
+      expect(person.updateIsExpired).not.toHaveBeenCalled();
+    });
   });
 
   describe('of collections', function() {
