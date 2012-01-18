@@ -66,6 +66,21 @@ describe('Auto fetching', function() {
         expect(person.fetch).not.toHaveBeenCalled();
       });
     });
+
+    it('should not fetch when autoFetch is false', function() {
+      spyOn(person, 'fetch');
+      person.set('autoFetch', false);
+
+      runs(function() {
+        expect(person.get('name')).toBeUndefined();
+      });
+
+      waits(100);
+
+      runs(function() {
+        expect(person.fetch).not.toHaveBeenCalled();
+      });
+    });
   });
 
   describe('of collections', function() {

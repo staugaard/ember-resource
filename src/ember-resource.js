@@ -627,6 +627,7 @@
     prototypeMixin: Ember.Mixin.create({
       expireIn: 60 * 5,
       resourceState: 0,
+      autoFetch: true,
 
       init: function() {
         this._super.apply(this, arguments);
@@ -665,6 +666,10 @@
         return state == Ember.Resource.Lifecycle.UNFETCHED || state === Ember.Resource.Lifecycle.EXPIRED;
       }.property('resourceState').cacheable(),
 
+      isAutoFetchable: function() {
+        return this.get('isFetchable') && this.get('autoFetch');
+      }.property('isFetchable', 'autoFetch').cacheable(),
+
       isInitializing: function() {
         return (Ember.get(this, 'resourceState') || Ember.Resource.Lifecycle.INITIALIZING) === Ember.Resource.Lifecycle.INITIALIZING;
       }.property('resourceState').cacheable(),
@@ -690,7 +695,7 @@
       }.property('resourceState').cacheable(),
 
       scheduleFetch: function() {
-        if (Ember.get(this, 'isFetchable')) {
+        if (Ember.get(this, 'isAutoFetchable')) {
           Ember.run.next(this, this.fetch);
         }
       },
