@@ -41,7 +41,7 @@ describe('Auto fetching', function() {
       });
     });
 
-    it('getting unknown attributes should not schedule a fetch', function() {
+    it('getting known attributes that are not defined should schedule a fetch', function() {
       runs(function() {
         expect(person.get('name')).toBeUndefined();
       });
@@ -51,6 +51,19 @@ describe('Auto fetching', function() {
       runs(function() {
         server.respond();
         expect(person.get('name')).toBe('Mick Staugaard');
+      });
+    });
+
+    it('getting unknown attributes should not schedule a fetch', function() {
+      spyOn(person, 'fetch');
+      runs(function() {
+        expect(person.get('notInSchema')).toBeUndefined();
+      });
+
+      waits(100);
+
+      runs(function() {
+        expect(person.fetch).not.toHaveBeenCalled();
       });
     });
   });
