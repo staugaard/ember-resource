@@ -41,7 +41,7 @@ describe('Auto fetching', function() {
       });
     });
 
-    it('getting unknown attributes should not schedule a fetch', function() {
+    it('getting known attributes that are not defined should schedule a fetch', function() {
       runs(function() {
         expect(person.get('name')).toBeUndefined();
       });
@@ -52,6 +52,45 @@ describe('Auto fetching', function() {
         server.respond();
         expect(person.get('name')).toBe('Mick Staugaard');
       });
+    });
+
+    it('getting unknown attributes should not schedule a fetch', function() {
+      spyOn(person, 'fetch');
+      runs(function() {
+        expect(person.get('notInSchema')).toBeUndefined();
+      });
+
+      waits(100);
+
+      runs(function() {
+        expect(person.fetch).not.toHaveBeenCalled();
+      });
+    });
+
+    it('should not fetch when autoFetch is false', function() {
+      spyOn(person, 'fetch');
+      person.set('autoFetch', false);
+
+      runs(function() {
+        expect(person.get('name')).toBeUndefined();
+      });
+
+      waits(100);
+
+      runs(function() {
+        expect(person.fetch).not.toHaveBeenCalled();
+      });
+    });
+
+    it('should not observe clock ticks when autoFetch is false', function() {
+      spyOn(person, 'updateIsExpired');
+      person.set('autoFetch', false);
+
+      Ember.Resource.Lifecycle.clock.tick();
+      person.set('expireAt', new Date());
+      person.set('resourceState', Ember.Resource.Lifecycle.DESTOYING);
+
+      expect(person.updateIsExpired).not.toHaveBeenCalled();
     });
   });
 
