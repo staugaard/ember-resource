@@ -88,7 +88,7 @@ describe('Auto fetching', function() {
 
       Ember.Resource.Lifecycle.clock.tick();
       person.set('expireAt', new Date());
-      person.set('resourceState', Ember.Resource.Lifecycle.DESTOYING);
+      person.set('resourceState', Ember.Resource.Lifecycle.DESTROYING);
 
       expect(person.updateIsExpired).not.toHaveBeenCalled();
     });

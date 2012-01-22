@@ -586,7 +586,7 @@
     FETCHING:     40,
     FETCHED:      50,
     SAVING:       60,
-    DESTOYING:    70,
+    DESTROYING:   70,
     DESTROYED:    80,
 
     clock: Ember.Object.create({
@@ -690,7 +690,7 @@
           Ember.Resource.Lifecycle.INITIALIZING,
           Ember.Resource.Lifecycle.FETCHING,
           Ember.Resource.Lifecycle.SAVING,
-          Ember.Resource.Lifecycle.DESTOYING
+          Ember.Resource.Lifecycle.DESTROYING
         ];
 
         return state && !unsavableState.contains(state);
