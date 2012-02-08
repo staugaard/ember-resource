@@ -857,7 +857,8 @@
       Ember.set(this, 'resourceState', Ember.Resource.Lifecycle.DESTROYING);
       return Ember.Resource.ajax({
         type: 'DELETE',
-        url:  this.resourceURL()
+        url:  this.resourceURL(),
+        resource: this
       }).done(function() {
         Ember.set(self, 'resourceState', Ember.Resource.Lifecycle.DESTROYED);
       }).fail(function() {
