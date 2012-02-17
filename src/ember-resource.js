@@ -1085,9 +1085,12 @@
     _fetch: function(callback) {
       this._resolveType();
       return Ember.Resource.ajax({
-        url: this.url || this.type.resourceURL(),
+        url: this.resolveUrl(),
         success: callback
       });
+    },
+    resolveUrl: function() {
+      return this.get('url') || this.type.resourceURL();
     },
     instantiateItems: function(items) {
       this._resolveType();
