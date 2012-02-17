@@ -11,11 +11,11 @@ describe('ResourceCollection', function() {
       type: Model,
 
       url: function() {
-        return '/foo';
+        return '/url/from/collection';
       }.property().cacheable()
     });
 
-    expect(collection.resolveUrl()).toEqual('/foo');
+    expect(collection.resolveUrl()).toEqual('/url/from/collection');
   });
 
 });
