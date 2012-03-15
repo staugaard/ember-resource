@@ -113,12 +113,12 @@ describe('A Resource instance', function() {
     });
   });
 
-  describe('when updating a property', function() {
+  describe('when setting a property value', function() {
     beforeEach(function() {
       model = Model.create({name: 'Aardvark'});
     });
 
-    it('should call callbacks with the property name and the new value', function() {
+    it('should execute callbacks with the property name and new value', function() {
       spyOn(model, 'resourcePropertyWillChange');
       spyOn(model, 'resourcePropertyDidChange');
       model.set('name', 'Zebra');
