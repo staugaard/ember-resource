@@ -13,7 +13,12 @@
     return obj === Object(obj);
   }
 
-  Ember.Resource = Ember.Object.extend({});
+  function K() {};
+
+  Ember.Resource = Ember.Object.extend({
+    resourcePropertyWillChange: K,
+    resourcePropertyDidChange: K
+  });
 
   Ember.Resource.deepSet = function(obj, path, value) {
     if (Ember.typeOf(path) === 'string') {
@@ -84,8 +89,10 @@
     propertyFunction: function(name, value) {
       var schemaItem = this.constructor.schema[name];
       if (arguments.length === 2) {
+        this.resourcePropertyWillChange(name, value);
         schemaItem.setValue.call(schemaItem, this, value);
         value = schemaItem.getValue.call(schemaItem, this);
+        this.resourcePropertyDidChange(name, value);
       } else {
         value = schemaItem.getValue.call(schemaItem, this);
         if ((value === undefined || Ember.get(this, 'isExpired')) && schemaItem.get('fetchable')) {

@@ -113,4 +113,17 @@ describe('A Resource instance', function() {
     });
   });
 
+  describe('when updating a property', function() {
+    beforeEach(function() {
+      model = Model.create({name: 'Aardvark'});
+    });
+
+    it('should call callbacks with the property name and the new value', function() {
+      spyOn(model, 'resourcePropertyWillChange');
+      spyOn(model, 'resourcePropertyDidChange');
+      model.set('name', 'Zebra');
+      expect(model.resourcePropertyWillChange).toHaveBeenCalledWith('name', 'Zebra');
+      expect(model.resourcePropertyDidChange).toHaveBeenCalledWith('name', 'Zebra');
+    });
+  });
 });
