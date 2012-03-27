@@ -167,7 +167,28 @@ describe('Auto fetching', function() {
             return people.get('length') === 2;
           }, 'collection never refetched', 2000);
         });
+
       });
+
+      describe('expired and autoFetch set to false', function() {
+        beforeEach(function() {
+          runs(function() {
+            spyOn(people, 'fetch');
+            people.set('autoFetch', false);
+            people.expire();
+          });
+
+          waitsFor(function() {
+            return people.get('isExpired');
+            }, 'collection never expired', 1000);
+         });
+
+         it('should not refetch', function() {
+           expect(people.fetch).not.toHaveBeenCalled();
+         });
+
+      });
+
     });
 
   });
