@@ -1,6 +1,21 @@
 require 'bundler/setup'
 require 'pathname'
+require 'rake-pipeline'
 
+namespace :dist do
+  task :build do
+    Rake::Pipeline::Project.new('AssetFile').invoke
+  end
+
+  task :clean do
+    Rake::Pipeline::Project.new('AssetFile').clean
+  end
+
+  task :cleanup_tmpdir do
+    Rake::Pipeline::Project.new('AssetFile').cleanup_tmpdir
+  end
+
+end
 
 namespace :jasmine do
   task :require do
@@ -17,7 +32,7 @@ namespace :jasmine do
   end
 
   desc "Run continuous integration tests"
-  task :ci => ["jasmine:require_json", "jasmine:require"] do
+  task :ci => ["jasmine:require_json", "jasmine:require", "dist:build"] do
     if Jasmine::rspec2?
       require "rspec"
       require "rspec/core/rake_task"
@@ -42,7 +57,7 @@ namespace :jasmine do
     Rake::Task["jasmine_continuous_integration_runner"].invoke
   end
 
-  task :server => "jasmine:require" do
+  task :server => ["jasmine:require", "dist:build"] do
     jasmine_config_overrides = File.join(Jasmine::Config.new.project_root, 'spec', 'javascripts' ,'support' ,'jasmine_config.rb')
     require jasmine_config_overrides if File.exist?(jasmine_config_overrides)
 
