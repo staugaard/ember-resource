@@ -4,15 +4,15 @@ require 'rake-pipeline'
 
 namespace :dist do
   task :build do
-    Rake::Pipeline::Project.new('Assetfile').invoke
+    Rake::Pipeline::Project.new('AssetFile').invoke
   end
 
   task :clean do
-    Rake::Pipeline::Project.new('Assetfile').clean
+    Rake::Pipeline::Project.new('AssetFile').clean
   end
 
   task :cleanup_tmpdir do
-    Rake::Pipeline::Project.new('Assetfile').cleanup_tmpdir
+    Rake::Pipeline::Project.new('AssetFile').cleanup_tmpdir
   end
 
 end
