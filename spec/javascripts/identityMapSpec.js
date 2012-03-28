@@ -24,6 +24,23 @@ describe('identity map', function() {
     expect(Address.identityMap.size()).toBe(10);
   });
 
+  it('should call destroy on objects flushed from the identity map', function() {
+    var address, address1;
+
+    address1 = Address.create({id: 1});
+
+    for(var i=2; i<=10; i++) {
+      address = Address.create({id: i});
+    }
+
+    expect(address1.get('isDestroyed')).toBeFalsy();
+
+    Address.create({id: 11});
+
+    expect(address1.get('isDestroyed')).toBeTruthy();
+
+  });
+
   describe("for resource collections", function() {
     var Addresses = Em.ResourceCollection.extend();
 
@@ -51,6 +68,23 @@ describe('identity map', function() {
       }
 
       expect(Address.identityMap.size()).toBe(10);
+    });
+
+    it('should call destroy on objects flushed from the identity map', function() {
+      var address, address1;
+
+      address1 = Addresses.create({type: Address, url: '/address/1'});
+
+      for(var i=2; i<=10; i++) {
+        address = Addresses.create({type: Address, url: '/address/' + i});
+      }
+
+      expect(address1.get('isDestroyed')).toBeFalsy();
+
+      Addresses.create({type: Address, url: '/address/11'});
+
+      expect(address1.get('isDestroyed')).toBeTruthy();
+
     });
 
 

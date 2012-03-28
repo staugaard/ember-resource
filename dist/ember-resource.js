@@ -259,6 +259,11 @@ if (typeof this === 'object') this.LRUCache = LRUCache;
 }());(function() {
   Ember.Resource.IdentityMap = function(limit) {
     this.cache = new LRUCache(limit || Ember.Resource.IdentityMap.DEFAULT_IDENTITY_MAP_LIMIT);
+    this.cache.shift = function() {
+      var obj = LRUCache.prototype.shift.call(this);
+      obj && obj.value && Em.Object.prototype.destroy.call(obj.value);
+      return obj;
+    };
   };
 
   Ember.Resource.IdentityMap.prototype = {
@@ -921,8 +926,6 @@ if (typeof this === 'object') this.LRUCache = LRUCache;
         var self = this;
 
         var updateExpiry = function() {
-          if(Ember.get(self, 'expireIn') === null) { return; }
-
           var expireAt = new Date();
           expireAt.setSeconds(expireAt.getSeconds() + Ember.get(self, 'expireIn'));
           Ember.set(self, 'expireAt', expireAt);
