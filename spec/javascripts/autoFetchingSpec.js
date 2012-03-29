@@ -170,22 +170,50 @@ describe('Auto fetching', function() {
 
         describe('and autofetch turned off', function(){
           beforeEach(function() {
-            people.addArrayObserver({});
 
             runs(function() {
-              spyOn(people, 'fetch');
               people.set('autoFetch', false);
               people.expire();
             });
 
-            waitsFor(function() {
-              return people.get('isExpired');
-              }, 'collection never expired', 1000);
-           });
+          });
 
-           it('should not refetch', function() {
-             expect(people.fetch).not.toHaveBeenCalled();
-           });
+          describe('and has Array Observers ', function(){
+            beforeEach(function() {
+              people.addArrayObserver({});
+
+              runs(function() {
+                spyOn(people, 'fetch');
+              });
+
+              waitsFor(function() {
+                return people.get('isExpired');
+                }, 'collection never expired', 1000);
+            });
+
+            it('should not refetch', function() {
+              expect(people.fetch).not.toHaveBeenCalled();
+            });
+
+          });
+
+          describe('and has no Array Observers ', function(){
+            beforeEach(function() {
+
+              runs(function() {
+                spyOn(people, 'fetch');
+              });
+
+              waitsFor(function() {
+                return people.get('isExpired');
+                }, 'collection never expired', 1000);
+            });
+
+            it('should not refetch', function() {
+              expect(people.fetch).not.toHaveBeenCalled();
+            });
+
+          });
 
         });
 
