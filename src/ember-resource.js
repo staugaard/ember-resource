@@ -1127,7 +1127,7 @@
     }.property().cacheable(),
 
     autoFetchOnExpiry: function() {
-      if (Ember.get(this, 'isExpired') && Ember.get(this, 'hasArrayObservers')) {
+      if (Ember.get(this, 'isAutoFetchable') && Ember.get(this, 'isExpired') && Ember.get(this, 'hasArrayObservers')) {
         this.fetch();
       }
     }.observes('isExpired', 'hasArrayObservers'),

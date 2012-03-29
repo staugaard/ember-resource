@@ -167,7 +167,105 @@ describe('Auto fetching', function() {
             return people.get('length') === 2;
           }, 'collection never refetched', 2000);
         });
+
+        describe('and autofetch turned off', function(){
+          beforeEach(function() {
+
+            runs(function() {
+              people.set('autoFetch', false);
+              people.expire();
+            });
+
+          });
+
+          describe('and has Array Observers ', function(){
+            beforeEach(function() {
+              people.addArrayObserver({});
+
+              runs(function() {
+                spyOn(people, 'fetch');
+              });
+
+              waitsFor(function() {
+                return people.get('isExpired');
+                }, 'collection never expired', 1000);
+            });
+
+            it('should not refetch', function() {
+              expect(people.fetch).not.toHaveBeenCalled();
+            });
+
+          });
+
+          describe('and has no Array Observers ', function(){
+            beforeEach(function() {
+
+              runs(function() {
+                spyOn(people, 'fetch');
+              });
+
+              waitsFor(function() {
+                return people.get('isExpired');
+                }, 'collection never expired', 1000);
+            });
+
+            it('should not refetch', function() {
+              expect(people.fetch).not.toHaveBeenCalled();
+            });
+
+          });
+
+        });
+
+        describe('and autofetch turned on', function(){
+          beforeEach(function() {
+            runs(function() {
+              people.set('autoFetch', true);
+              people.expire();
+            });
+           });
+
+           describe('and has Array Observers ', function(){
+             beforeEach(function() {
+               people.addArrayObserver({});
+
+               runs(function() {
+                 spyOn(people, 'fetch');
+               });
+
+               waitsFor(function() {
+                 return people.get('isExpired');
+                 }, 'collection never expired', 1000);
+              });
+
+              it('should refetch', function() {
+                expect(people.fetch).toHaveBeenCalled();
+              });
+
+            });
+
+           describe('and has no Array Observers ', function(){
+             beforeEach(function() {
+
+               runs(function() {
+                 spyOn(people, 'fetch');
+               });
+
+               waitsFor(function() {
+                 return people.get('isExpired');
+                 }, 'collection never expired', 1000);
+              });
+
+              it('should not refetch', function() {
+                expect(people.fetch).not.toHaveBeenCalled();
+              });
+
+            });
+
+        });
+
       });
+
     });
 
   });
