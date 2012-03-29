@@ -1,11 +1,6 @@
 (function() {
   Ember.Resource.IdentityMap = function(limit) {
     this.cache = new LRUCache(limit || Ember.Resource.IdentityMap.DEFAULT_IDENTITY_MAP_LIMIT);
-    this.cache.shift = function() {
-      var obj = LRUCache.prototype.shift.call(this);
-      obj && obj.value && Em.Object.prototype.destroy.call(obj.value);
-      return obj;
-    };
   };
 
   Ember.Resource.IdentityMap.prototype = {
