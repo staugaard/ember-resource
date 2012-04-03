@@ -26,6 +26,6 @@
 
   };
 
-  Ember.Resource.IdentityMap.DEFAULT_IDENTITY_MAP_LIMIT = 30;
+  Ember.Resource.IdentityMap.DEFAULT_IDENTITY_MAP_LIMIT = 500;
 
 }());

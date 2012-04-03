@@ -1141,6 +1141,7 @@
 
   Ember.ResourceCollection.reopenClass({
     isEmberResourceCollection: true,
+    identityMapLimit: Ember.Resource.IdentityMap.DEFAULT_IDENTITY_MAP_LIMIT * 5,
     create: function(options) {
       options = options || {};
       var content = options.content;

@@ -31,10 +31,10 @@ describe('identity map', function() {
       identityMapLimit: 10
     });
 
-    it('should default to a limit of DEFAULT_IDENTITY_MAP_LIMIT', function() {
+    it('should default to a limit of 5x DEFAULT_IDENTITY_MAP_LIMIT', function() {
       var Foo = Em.ResourceCollection.extend();
       Foo.create({type: Address, url: '/foo'});
-      expect(Foo.identityMap.limit()).toBe(Ember.Resource.IdentityMap.DEFAULT_IDENTITY_MAP_LIMIT);
+      expect(Foo.identityMap.limit()).toBe(Ember.Resource.IdentityMap.DEFAULT_IDENTITY_MAP_LIMIT * 5);
     });
 
     it('should return the same object when requested multiple times', function() {

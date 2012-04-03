@@ -284,7 +284,7 @@ if (typeof this === 'object') this.LRUCache = LRUCache;
 
   };
 
-  Ember.Resource.IdentityMap.DEFAULT_IDENTITY_MAP_LIMIT = 30;
+  Ember.Resource.IdentityMap.DEFAULT_IDENTITY_MAP_LIMIT = 500;
 
 }());(function(undefined) {
 
@@ -1429,6 +1429,7 @@ if (typeof this === 'object') this.LRUCache = LRUCache;
 
   Ember.ResourceCollection.reopenClass({
     isEmberResourceCollection: true,
+    identityMapLimit: Ember.Resource.IdentityMap.DEFAULT_IDENTITY_MAP_LIMIT * 5,
     create: function(options) {
       options = options || {};
       var content = options.content;
