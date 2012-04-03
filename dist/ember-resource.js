@@ -921,8 +921,6 @@ if (typeof this === 'object') this.LRUCache = LRUCache;
         var self = this;
 
         var updateExpiry = function() {
-          if(Ember.get(self, 'expireIn') === null) { return; }
-
           var expireAt = new Date();
           expireAt.setSeconds(expireAt.getSeconds() + Ember.get(self, 'expireIn'));
           Ember.set(self, 'expireAt', expireAt);
