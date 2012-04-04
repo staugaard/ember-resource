@@ -1033,6 +1033,13 @@ if (typeof this === 'object') this.LRUCache = LRUCache;
     willSave: function() {},
     didSave: function() {},
 
+    fetched: function() {
+      if(!this._fetchDfd) {
+        this._fetchDfd = $.Deferred();
+      }
+      return this._fetchDfd;
+    },
+
     fetch: function() {
       if (!Ember.get(this, 'isFetchable')) return $.when();
 
@@ -1057,6 +1064,7 @@ if (typeof this === 'object') this.LRUCache = LRUCache;
       this.deferedFetch.always(function() {
         self.didFetch.call(self);
         Ember.sendEvent(self, 'didFetch');
+        self.fetched().resolve();
       });
 
       return this.deferedFetch;
@@ -1347,6 +1355,14 @@ if (typeof this === 'object') this.LRUCache = LRUCache;
   Ember.ResourceCollection = Ember.ArrayProxy.extend({
     isEmberResourceCollection: true,
     type: Ember.required(),
+
+    fetched: function() {
+      if(!this._fetchDfd) {
+        this._fetchDfd = $.Deferred();
+      }
+      return this._fetchDfd;
+    },
+
     fetch: function() {
       if (!Ember.get(this, 'isFetchable')) return $.when();
 
@@ -1363,6 +1379,7 @@ if (typeof this === 'object') this.LRUCache = LRUCache;
 
         this.deferedFetch.always(function() {
           Ember.sendEvent(self, 'didFetch');
+          self.fetched().resolve();
         });
       }
       return this.deferedFetch;

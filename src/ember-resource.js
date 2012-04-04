@@ -745,6 +745,13 @@
     willSave: function() {},
     didSave: function() {},
 
+    fetched: function() {
+      if(!this._fetchDfd) {
+        this._fetchDfd = $.Deferred();
+      }
+      return this._fetchDfd;
+    },
+
     fetch: function() {
       if (!Ember.get(this, 'isFetchable')) return $.when();
 
@@ -769,6 +776,7 @@
       this.deferedFetch.always(function() {
         self.didFetch.call(self);
         Ember.sendEvent(self, 'didFetch');
+        self.fetched().resolve();
       });
 
       return this.deferedFetch;
@@ -1059,6 +1067,14 @@
   Ember.ResourceCollection = Ember.ArrayProxy.extend({
     isEmberResourceCollection: true,
     type: Ember.required(),
+
+    fetched: function() {
+      if(!this._fetchDfd) {
+        this._fetchDfd = $.Deferred();
+      }
+      return this._fetchDfd;
+    },
+
     fetch: function() {
       if (!Ember.get(this, 'isFetchable')) return $.when();
 
@@ -1075,6 +1091,7 @@
 
         this.deferedFetch.always(function() {
           Ember.sendEvent(self, 'didFetch');
+          self.fetched().resolve();
         });
       }
       return this.deferedFetch;
