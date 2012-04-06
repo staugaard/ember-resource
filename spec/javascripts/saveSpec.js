@@ -27,14 +27,36 @@ describe('Saving a resource instance', function() {
     it('should pass a reference to the resource to the error handling function', function() {
       var spy = jasmine.createSpy();
       Ember.Resource.errorHandler = function(a, b, c, fourthArgument) {
-        spy(fourthArgument);
+        spy(fourthArgument.resource, fourthArgument.operation);
       };
 
       var resource = Model.create({ name: 'foo' });
       resource.save();
       server.respond();
 
-      expect(spy).toHaveBeenCalledWith(resource);
+      expect(spy).toHaveBeenCalledWith(resource, "create");
+    });
+  });
+
+  describe('handling errors on create', function() {
+    beforeEach(function() {
+      server.respondWith('PUT', '/people/1', [422, {}, '[["foo", "bar"]]']);
+    });
+
+    it('should pass a reference to the resource to the error handling function', function() {
+      var spy = jasmine.createSpy();
+      Ember.Resource.errorHandler = function(a, b, c, fourthArgument) {
+        spy(fourthArgument.resource, fourthArgument.operation);
+      };
+
+      var resource = Model.create({ name: 'foo' });
+      resource.set('isNew', false);
+      resource.set('id', 1);
+
+      resource.save();
+      server.respond();
+
+      expect(spy).toHaveBeenCalledWith(resource, "update");
     });
   });
 

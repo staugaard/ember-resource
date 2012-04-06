@@ -840,25 +840,23 @@ if (typeof this === 'object') this.LRUCache = LRUCache;
   //       resource; // another way to reference the resource object
   //     }
   //
-  var errorHandlerWithModel = function(errorHandler, resource) {
+  var errorHandlerWithContext = function(errorHandler, context) {
     return function() {
       var args = Array.prototype.slice.call(arguments, 0);
-      args.push(resource);
-      errorHandler.apply(resource, args);
+      args.push(context);
+      errorHandler.apply(context, args);
     };
   };
 
   Ember.Resource.ajax = function(options) {
+    if(window.stopHere) { debugger }
     options.dataType = options.dataType || 'json';
     options.type     = options.type     || 'GET';
 
-    if (!options.error && Ember.Resource.errorHandler) {
-      if (options.resource) {
-        options.error = errorHandlerWithModel(Ember.Resource.errorHandler, options.resource);
-        delete options.resource;
-      } else {
-        options.error = Ember.Resource.errorHandler;
-      }
+    if(options.error) {
+      options.error = errorHandlerWithContext(options.error, options);
+    } else if(Em.Resource.errorHandler) {
+      options.error = errorHandlerWithContext(Ember.Resource.errorHandler, options);
     }
 
     return $.ajax(options);
@@ -1057,6 +1055,7 @@ if (typeof this === 'object') this.LRUCache = LRUCache;
       this.deferedFetch = Ember.Resource.ajax({
         url: url,
         resource: this,
+        operation: 'read',
         success: function(json) {
           self.updateWithApiData(json);
         }
@@ -1113,9 +1112,11 @@ if (typeof this === 'object') this.LRUCache = LRUCache;
       if (Ember.get(this, 'isNew')) {
         ajaxOptions.type = 'POST';
         ajaxOptions.url = this.constructor.resourceURL();
+        ajaxOptions.operation = 'create';
       } else {
         ajaxOptions.type = 'PUT';
         ajaxOptions.url = this.resourceURL();
+        ajaxOptions.operation = 'update';
       }
 
       var self = this;
@@ -1152,6 +1153,8 @@ if (typeof this === 'object') this.LRUCache = LRUCache;
       Ember.set(this, 'resourceState', Ember.Resource.Lifecycle.DESTROYING);
       return Ember.Resource.ajax({
         type: 'DELETE',
+        resource: this,
+        operation: 'destroy',
         url:  this.resourceURL(),
         resource: this
       }).done(function() {
@@ -1396,6 +1399,7 @@ if (typeof this === 'object') this.LRUCache = LRUCache;
       return Ember.Resource.ajax({
         url: this.resolveUrl(),
         resource: this,
+        operation: 'read',
         success: callback
       });
     },

@@ -26,15 +26,16 @@ describe('Destroying a resource instance', function() {
 
     it('should pass a reference to the resource to the error handling function', function() {
       var spy = jasmine.createSpy();
+
       Ember.Resource.errorHandler = function(a, b, c, fourthArgument) {
-        spy(fourthArgument);
+        spy(fourthArgument.resource, fourthArgument.operation);
       };
 
       var resource = Model.create({ name: 'f0o' });
       resource.destroy();
       server.respond();
 
-      expect(spy).toHaveBeenCalledWith(resource);
+      expect(spy).toHaveBeenCalledWith(resource, "destroy");
     });
   });
 });

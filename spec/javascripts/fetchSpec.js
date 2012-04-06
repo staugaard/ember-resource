@@ -40,9 +40,47 @@ describe('deferred fetch', function() {
     });
   });
 
+  describe('handling errors on fetch for resources', function() {
+    beforeEach(function() {
+      server.respondWith('GET', '/people/2', [422, {}, '[["foo", "bar"]]']);
+    });
+
+    it('should pass a reference to the resource to the error handling function', function() {
+      var spy = jasmine.createSpy();
+      Ember.Resource.errorHandler = function(a, b, c, fourthArgument) {
+        spy(fourthArgument.resource, fourthArgument.operation);
+      };
+
+      var resource = Person.create({ id: 2 });
+
+      resource.fetch();
+      server.respond();
+
+      expect(spy).toHaveBeenCalledWith(resource, "read");
+    });
+  });
+
+  describe('handling errors on fetch for collections', function() {
+    beforeEach(function() {
+      people = Ember.ResourceCollection.create({type: Person});
+      server.respondWith('GET', '/people', [422, {}, '[["foo", "bar"]]']);
+    });
+
+    it('should pass a reference to the resource to the error handling function', function() {
+      var spy = jasmine.createSpy();
+      Ember.Resource.errorHandler = function(a, b, c, fourthArgument) {
+        spy(fourthArgument.resource, fourthArgument.operation);
+      };
+
+      people.fetch();
+      server.respond();
+
+      expect(spy).toHaveBeenCalledWith(people, "read");
+    });
+  });
+
   describe("fetched() for resource collections", function() {
     beforeEach(function() {
-//      window.stopHere = true;
       server.restore();
       server.respondWith("GET", "/people",
                          [200, { "Content-Type": "application/json" },
