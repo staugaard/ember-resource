@@ -768,6 +768,7 @@
 
       this.deferedFetch = Ember.Resource.ajax({
         url: url,
+        resource: this,
         success: function(json) {
           self.updateWithApiData(json);
         }
@@ -1106,6 +1107,7 @@
       this._resolveType();
       return Ember.Resource.ajax({
         url: this.resolveUrl(),
+        resource: this,
         success: callback
       });
     },
