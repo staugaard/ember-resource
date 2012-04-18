@@ -1080,24 +1080,22 @@
     },
 
     fetch: function() {
-      if (!Ember.get(this, 'isFetchable')) return $.when();
+      if (!Ember.get(this, 'isFetchable') || Ember.get(this, 'prePopulated')) return $.when();
 
-      if (!this.prePopulated) {
-        var self = this;
+      var self = this;
 
-        if (this.deferedFetch && !Ember.get(this, 'isExpired')) return this.deferedFetch;
+      if (this.deferedFetch && !Ember.get(this, 'isExpired')) return this.deferedFetch;
 
-        Ember.sendEvent(self, 'willFetch');
+      Ember.sendEvent(self, 'willFetch');
 
-        this.deferedFetch = this._fetch(function(json) {
-          Ember.set(self, 'content', self.parse(json));
-        });
+      this.deferedFetch = this._fetch(function(json) {
+        Ember.set(self, 'content', self.parse(json));
+      });
 
-        this.deferedFetch.always(function() {
-          Ember.sendEvent(self, 'didFetch');
-          self.fetched().resolve();
-        });
-      }
+      this.deferedFetch.always(function() {
+        Ember.sendEvent(self, 'didFetch');
+        self.fetched().resolve();
+      });
       return this.deferedFetch;
     },
     _resolveType: function() {
