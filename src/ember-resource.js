@@ -1,7 +1,9 @@
-(function(undefined) {
+(function(exports) {
 
   var expandSchema, expandSchemaItem, createSchemaProperties,
       mergeSchemas;
+
+  var Ember = exports.Ember;
 
   function isString(obj) {
     return !!(obj === '' || (obj && obj !== String && obj.charCodeAt && obj.substr));
@@ -561,13 +563,12 @@
   };
 
   Ember.Resource.ajax = function(options) {
-    if(window.stopHere) { debugger }
     options.dataType = options.dataType || 'json';
     options.type     = options.type     || 'GET';
 
     if(options.error) {
       options.error = errorHandlerWithContext(options.error, options);
-    } else if(Em.Resource.errorHandler) {
+    } else if(Ember.Resource.errorHandler) {
       options.error = errorHandlerWithContext(Ember.Resource.errorHandler, options);
     }
 
@@ -865,7 +866,6 @@
       Ember.set(this, 'resourceState', Ember.Resource.Lifecycle.DESTROYING);
       return Ember.Resource.ajax({
         type: 'DELETE',
-        resource: this,
         operation: 'destroy',
         url:  this.resourceURL(),
         resource: this
@@ -1156,7 +1156,7 @@
     toJSON: function() {
       return this.map(function(item) {
         return item.toJSON();
-      })
+      });
     }
   }, Ember.Resource.Lifecycle.prototypeMixin);
 
@@ -1190,4 +1190,4 @@
       return instance;
     }
   }, Ember.Resource.Lifecycle.classMixin);
-}());
+}(this));
