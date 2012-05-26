@@ -647,6 +647,11 @@
           updateExpiry();
         });
 
+        Ember.addListener(this, 'didFail', this, function() {
+          Ember.set(self, 'resourceState', Ember.Resource.Lifecycle.UNFETCHED);
+          updateExpiry();
+        });
+
         var resourceStateBeforeSave;
         Ember.addListener(this, 'willSave', this, function() {
           resourceStateBeforeSave = Ember.get(self, 'resourceState');
@@ -743,6 +748,7 @@
     didFetch: function() {},
     willSave: function() {},
     didSave: function() {},
+    didFail: function() {},
 
     fetched: function() {
       if(!this._fetchDfd) {
@@ -774,10 +780,20 @@
         }
       });
 
-      this.deferedFetch.always(function() {
+      this.deferedFetch.fail(function() {
+        self.didFail.call(self);
+        Ember.sendEvent(self, 'didFail');
+        self.fetched().reject();
+      });
+
+      this.deferedFetch.success(function() {
         self.didFetch.call(self);
         Ember.sendEvent(self, 'didFetch');
         self.fetched().resolve();
+      });
+
+      this.deferedFetch.always(function() {
+        self.deferedFetch = null;
       });
 
       return this.deferedFetch;
@@ -1097,6 +1113,7 @@
       this.deferedFetch.always(function() {
         Ember.sendEvent(self, 'didFetch');
         self.fetched().resolve();
+        self.deferredFetch = null;
       });
       return this.deferedFetch;
     },
