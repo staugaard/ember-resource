@@ -255,7 +255,7 @@ if (typeof this === 'object') this.LRUCache = LRUCache;
     resourcePropertyWillChange: window.Ember.K,
     resourcePropertyDidChange: window.Ember.K
   });
-  
+
 }());(function() {
   Ember.Resource.IdentityMap = function(limit) {
     this.cache = new LRUCache(limit || Ember.Resource.IdentityMap.DEFAULT_IDENTITY_MAP_LIMIT);
@@ -286,10 +286,12 @@ if (typeof this === 'object') this.LRUCache = LRUCache;
 
   Ember.Resource.IdentityMap.DEFAULT_IDENTITY_MAP_LIMIT = 500;
 
-}());(function(undefined) {
+}());(function(exports) {
 
   var expandSchema, expandSchemaItem, createSchemaProperties,
       mergeSchemas;
+
+  var Ember = exports.Ember;
 
   function isString(obj) {
     return !!(obj === '' || (obj && obj !== String && obj.charCodeAt && obj.substr));
@@ -849,13 +851,12 @@ if (typeof this === 'object') this.LRUCache = LRUCache;
   };
 
   Ember.Resource.ajax = function(options) {
-    if(window.stopHere) { debugger }
     options.dataType = options.dataType || 'json';
     options.type     = options.type     || 'GET';
 
     if(options.error) {
       options.error = errorHandlerWithContext(options.error, options);
-    } else if(Em.Resource.errorHandler) {
+    } else if(Ember.Resource.errorHandler) {
       options.error = errorHandlerWithContext(Ember.Resource.errorHandler, options);
     }
 
@@ -931,6 +932,11 @@ if (typeof this === 'object') this.LRUCache = LRUCache;
 
         Ember.addListener(this, 'didFetch', this, function() {
           Ember.set(self, 'resourceState', Ember.Resource.Lifecycle.FETCHED);
+          updateExpiry();
+        });
+
+        Ember.addListener(this, 'didFail', this, function() {
+          Ember.set(self, 'resourceState', Ember.Resource.Lifecycle.UNFETCHED);
           updateExpiry();
         });
 
@@ -1030,6 +1036,7 @@ if (typeof this === 'object') this.LRUCache = LRUCache;
     didFetch: function() {},
     willSave: function() {},
     didSave: function() {},
+    didFail: function() {},
 
     fetched: function() {
       if(!this._fetchDfd) {
@@ -1061,10 +1068,20 @@ if (typeof this === 'object') this.LRUCache = LRUCache;
         }
       });
 
-      this.deferedFetch.always(function() {
+      this.deferedFetch.fail(function() {
+        self.didFail.call(self);
+        Ember.sendEvent(self, 'didFail');
+        self.fetched().reject();
+      });
+
+      this.deferedFetch.success(function() {
         self.didFetch.call(self);
         Ember.sendEvent(self, 'didFetch');
         self.fetched().resolve();
+      });
+
+      this.deferedFetch.always(function() {
+        self.deferedFetch = null;
       });
 
       return this.deferedFetch;
@@ -1153,7 +1170,6 @@ if (typeof this === 'object') this.LRUCache = LRUCache;
       Ember.set(this, 'resourceState', Ember.Resource.Lifecycle.DESTROYING);
       return Ember.Resource.ajax({
         type: 'DELETE',
-        resource: this,
         operation: 'destroy',
         url:  this.resourceURL(),
         resource: this
@@ -1242,6 +1258,8 @@ if (typeof this === 'object') this.LRUCache = LRUCache;
             this.identityMap.put(id, instance);
           } else {
             instance.updateWithApiData(data);
+            // ignore incoming resourceState argument
+            delete options.resourceState;
           }
         } else {
           instance = this._super.call(this, { data: data });
@@ -1383,6 +1401,7 @@ if (typeof this === 'object') this.LRUCache = LRUCache;
       this.deferedFetch.always(function() {
         Ember.sendEvent(self, 'didFetch');
         self.fetched().resolve();
+        self.deferredFetch = null;
       });
       return this.deferedFetch;
     },
@@ -1444,7 +1463,7 @@ if (typeof this === 'object') this.LRUCache = LRUCache;
     toJSON: function() {
       return this.map(function(item) {
         return item.toJSON();
-      })
+      });
     }
   }, Ember.Resource.Lifecycle.prototypeMixin);
 
@@ -1478,4 +1497,4 @@ if (typeof this === 'object') this.LRUCache = LRUCache;
       return instance;
     }
   }, Ember.Resource.Lifecycle.classMixin);
-}());
+}(this));
