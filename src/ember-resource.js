@@ -954,6 +954,8 @@
             this.identityMap.put(id, instance);
           } else {
             instance.updateWithApiData(data);
+            // ignore incoming resourceState argument
+            delete options.resourceState;
           }
         } else {
           instance = this._super.call(this, { data: data });

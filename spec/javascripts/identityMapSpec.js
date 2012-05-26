@@ -24,6 +24,13 @@ describe('identity map', function() {
     expect(Address.identityMap.size()).toBe(10);
   });
 
+  it('should not clobber the resourceState of an already cached object', function() {
+    var address = Address.create({id: 1});
+    address.set('resourceState', 50);
+    address = Address.create({id: 1});
+    expect(address.get('resourceState')).toBe(50);
+  });
+
   describe("for resource collections", function() {
     var Addresses = Em.ResourceCollection.extend();
 
