@@ -1072,6 +1072,10 @@
       } else if (this.url) {
         if (instance) {
           var id = Ember.get(instance, 'id');
+          if(!id) {
+            return this.url;
+          }
+
           if (id && (Ember.typeOf(id) !== 'number' || id > 0)) {
             return this.url + '/' + id;
           }
