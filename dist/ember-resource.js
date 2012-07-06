@@ -1046,6 +1046,7 @@ if (typeof this === 'object') this.LRUCache = LRUCache;
     },
 
     fetch: function() {
+      var ajaxOptions, sideloads;
       if (!Ember.get(this, 'isFetchable')) return $.when();
 
       var url = this.resourceURL();
@@ -1059,13 +1060,20 @@ if (typeof this === 'object') this.LRUCache = LRUCache;
       self.willFetch.call(self);
       Ember.sendEvent(self, 'willFetch');
 
-      this.deferedFetch = Ember.Resource.ajax({
+      ajaxOptions = {
         url: url,
         resource: this,
-        operation: 'read',
-        success: function(json) {
-          self.updateWithApiData(json);
-        }
+        operation: 'read'
+      };
+
+      sideloads = this.constructor.sideloads;
+
+      if(sideloads && sideloads.length !== 0) {
+        ajaxOptions.data = {include: sideloads.join(",")};
+      }
+
+      this.deferedFetch = Ember.Resource.ajax(ajaxOptions).done(function(json) {
+        self.updateWithApiData(json);
       });
 
       this.deferedFetch.fail(function() {
@@ -1074,7 +1082,7 @@ if (typeof this === 'object') this.LRUCache = LRUCache;
         self.fetched().reject();
       });
 
-      this.deferedFetch.success(function() {
+      this.deferedFetch.done(function() {
         self.didFetch.call(self);
         Ember.sendEvent(self, 'didFetch');
         self.fetched().resolve();
@@ -1335,6 +1343,10 @@ if (typeof this === 'object') this.LRUCache = LRUCache;
 
       if (options.identityMapLimit) {
         classOptions.identityMapLimit = options.identityMapLimit;
+      }
+
+      if(options.sideloads) {
+        classOptions.sideloads = options.sideloads;
       }
 
       klass.reopenClass(classOptions);

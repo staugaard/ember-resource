@@ -13,6 +13,37 @@ describe('A Resource instance', function() {
 
   });
 
+
+  describe("defining a resource", function() {
+
+    describe("with a sideloads attribute", function() {
+      var subject;
+      beforeEach(function() {
+        subject = Em.Resource.define({
+          url: "/users",
+          sideloads: ["abilities", "weapons"]
+        });
+      });
+
+      it("should not include the sideloads in resourceURL", function() {
+        var user = subject.create({id: 1});
+        expect(user.resourceURL()).toEqual("/users/1");
+      });
+
+      it("should send the sideloads in AJAX fetches", function() {
+        var user = subject.create({id: 1});
+        spyOn(Em.Resource, 'ajax').andReturn($.when());
+        user.fetch();
+        expect(Em.Resource.ajax).toHaveBeenCalledWith({
+          url: "/users/1",
+          resource: user,
+          operation: 'read',
+          data: {include: "abilities,weapons"}
+        });
+      });
+    });
+  });
+
   describe('with no ID', function() {
 
     beforeEach(function() {
