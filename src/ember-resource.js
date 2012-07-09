@@ -45,8 +45,15 @@
 
         if (Ember.typeOf(newValue) === 'object' && Ember.typeOf(oldValue) === 'object') {
           Ember.Resource.deepMerge(oldValue, newValue);
+
         } else {
-          Ember.set(objA, key, newValue);
+          oldValueEmptyArray = (Ember.typeOf(oldValue) == "array") && (oldValue.length == 0)
+          newValueEmptyArray = (Ember.typeOf(newValue) == "array") && (newValue.length == 0)
+
+          if((newValue != oldValue) && (!oldValueEmptyArray && !newValueEmptyArray) ){
+            Ember.set(objA, key, newValue);
+          }
+
         }
       }
     }
