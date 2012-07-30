@@ -17,29 +17,58 @@ describe('A Resource instance', function() {
   describe("defining a resource", function() {
 
     describe("with a sideloads attribute", function() {
-      var subject;
+
+      var user, json, Subject;
+
       beforeEach(function() {
-        subject = Em.Resource.define({
-          url: "/users",
-          sideloads: ["abilities", "weapons"]
+        // Global space required for sideload path to object conversion
+        window.Sideload = {};
+
+        Sideload.Burger   = Em.Resource.define({ schema: { cheese: Boolean }});
+        Sideload.Smoothie = Em.Resource.define({ schema: { fruit: Boolean }});
+        Subject   = Em.Resource.define({
+          url: "/foods",
+          schema: { status: String },
+          sideloads: { burger: Sideload.Burger, smoothie: 'Sideload.Smoothie' },
+          parse: function(json) { return json.foods; }
         });
+
+        json = {
+          foods: { status: 'hungry' },
+          burger: { cheese: true },
+          smoothie: { fruit: true }
+        };
+        spyOn(Em.Resource, 'ajax').andReturn($.when(json));
+
+        food = Subject.create({id: 1});
+        food.fetch();
       });
 
-      it("should not include the sideloads in resourceURL", function() {
-        var user = subject.create({id: 1});
-        expect(user.resourceURL()).toEqual("/users/1");
+      afterEach(function() {
+        window.Sideload = undefined;
       });
 
       it("should send the sideloads in AJAX fetches", function() {
-        var user = subject.create({id: 1});
-        spyOn(Em.Resource, 'ajax').andReturn($.when());
-        user.fetch();
         expect(Em.Resource.ajax).toHaveBeenCalledWith({
-          url: "/users/1",
-          resource: user,
+          url: "/foods/1",
+          resource: food,
           operation: 'read',
-          data: {include: "abilities,weapons"}
+          data: {include: "burger,smoothie"}
         });
+      });
+
+      it("should accept a sideload class or path (string)", function() {
+        expect(food.burger.isEmberResource).toBeTruthy()
+        expect(food.smoothie.isEmberResource).toBeTruthy();
+      });
+
+      it("should add sideload data", function() {
+        expect(food.burger.get('cheese')).toBeTruthy();
+        expect(food.smoothie.get('fruit')).toBeTruthy();
+      });
+
+      it("should still load data in sideload parent", function() {
+        expect(food.get('status')).toEqual('hungry');
       });
     });
   });

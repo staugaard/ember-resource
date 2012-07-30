@@ -740,8 +740,29 @@
     updateWithApiData: function(json) {
       var data = Ember.get(this, 'data');
       Ember.beginPropertyChanges(data);
+      this.updateSideloadApiData(json);
       Ember.Resource.deepMerge(data, this.constructor.parse(json));
       Ember.endPropertyChanges(data);
+    },
+
+    updateSideloadApiData: function(json) {
+      var sideloads = this.constructor.sideloads;
+      if (!sideloads || Ember.keys(sideloads).length === 0) { return; }
+
+      for (var name in sideloads) {
+        var klass    = sideloads[name],
+            instance = Ember.get(this, name);
+
+        if (typeof klass === 'string') { klass = Ember.getPath(klass); }
+        ember_assert("sideload %@ requires class definitions in %@".fmt(name, this.toString()), isObject(klass));
+
+        if (!instance) {
+          instance = klass.create();
+          Ember.set(this, name, instance);
+        }
+        var data = Ember.get(instance, 'data');
+        Ember.Resource.deepMerge(data, instance.constructor.parse(json[name]));
+      };
     },
 
     willFetch: function() {},
@@ -780,8 +801,8 @@
 
       sideloads = this.constructor.sideloads;
 
-      if(sideloads && sideloads.length !== 0) {
-        ajaxOptions.data = {include: sideloads.join(",")};
+      if(sideloads && Ember.keys(sideloads).length !== 0) {
+        ajaxOptions.data = {include: Ember.keys(sideloads).join(",")};
       }
 
       this.deferedFetch = Ember.Resource.ajax(ajaxOptions).done(function(json) {
