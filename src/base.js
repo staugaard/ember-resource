@@ -6,5 +6,5 @@
     resourcePropertyWillChange: window.Ember.K,
     resourcePropertyDidChange: window.Ember.K
   });
-  
+
 }());
