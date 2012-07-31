@@ -51,6 +51,10 @@ describe('A Resource instance', function() {
         window.Sideload = undefined;
       });
 
+      it("should not include the sideloads in resourceURL", function() {
+        expect(food.resourceURL()).toEqual("/foods/1");
+      });
+
       it("should send the sideloads in AJAX fetches", function() {
         expect(Em.Resource.ajax).toHaveBeenCalledWith({
           url: "/foods/1",
