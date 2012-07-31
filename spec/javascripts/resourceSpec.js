@@ -10,9 +10,7 @@ describe('A Resource instance', function() {
       },
       url: '/people'
     });
-
   });
-
 
   describe("defining a resource", function() {
 
@@ -21,12 +19,17 @@ describe('A Resource instance', function() {
       var user, json, Subject;
 
       beforeEach(function() {
-        // Global space required for sideload path to object conversion
+        // Global namespace required to respect Ember's
+        // global-path-name-to-object conversion functionality
         window.Sideload = {};
 
-        Sideload.Burger   = Em.Resource.define({ schema: { cheese: Boolean }});
-        Sideload.Smoothie = Em.Resource.define({ schema: { fruit: Boolean }});
-        Subject   = Em.Resource.define({
+        Sideload.Smoothie      = Em.Resource.define({
+          schema: { fruit: Boolean },
+          sideloads: { vegan: 'Sideload.SmoothieVegan'}
+        });
+        Sideload.SmoothieVegan = Em.Resource.define({ schema: { flavor: String, numberAsString: String }});
+        Sideload.Burger        = Em.Resource.define({ schema: { cheese: Boolean, pounds: Number }});
+        Subject                = Em.Resource.define({
           url: "/foods",
           schema: { status: String },
           sideloads: { burger: Sideload.Burger, smoothie: 'Sideload.Smoothie' },
@@ -35,8 +38,8 @@ describe('A Resource instance', function() {
 
         json = {
           foods: { status: 'hungry' },
-          burger: { cheese: true },
-          smoothie: { fruit: true }
+          burger: { cheese: true, pounds: 0.5 },
+          smoothie: { fruit: true, vegan: { flavor: 'tofu', numberAsString: '123' }}
         };
         spyOn(Em.Resource, 'ajax').andReturn($.when(json));
 
@@ -62,13 +65,19 @@ describe('A Resource instance', function() {
         expect(food.smoothie.isEmberResource).toBeTruthy();
       });
 
+      it("should still load data in sideload parent", function() {
+        expect(food.get('status')).toEqual('hungry');
+      });
+
       it("should add sideload data", function() {
         expect(food.burger.get('cheese')).toBeTruthy();
+        expect(food.burger.get('pounds')).toEqual(0.5);
         expect(food.smoothie.get('fruit')).toBeTruthy();
       });
 
-      it("should still load data in sideload parent", function() {
-        expect(food.get('status')).toEqual('hungry');
+      it("should recurse through nested sideloads", function() {
+        expect(food.smoothie.vegan.get('flavor')).toEqual('tofu');
+        expect(food.smoothie.vegan.get('numberAsString')).toEqual('123');
       });
     });
   });

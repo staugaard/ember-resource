@@ -747,21 +747,27 @@
 
     updateSideloadApiData: function(json) {
       var sideloads = this.constructor.sideloads;
-      if (!sideloads || Ember.keys(sideloads).length === 0) { return; }
+      if (!isObject(sideloads) || Ember.isArray(sideloads) || Ember.keys(sideloads).length === 0) { return; }
 
       for (var name in sideloads) {
-        var klass    = sideloads[name],
-            instance = Ember.get(this, name);
+        if (sideloads.hasOwnProperty(name)) {
+          var klass    = sideloads[name],
+              instance = Ember.get(this, name);
 
-        if (typeof klass === 'string') { klass = Ember.getPath(klass); }
-        ember_assert("sideload %@ requires class definitions in %@".fmt(name, this.toString()), isObject(klass));
+          if (isString(klass)) { klass = Ember.getPath(klass); }
+          ember_assert("sideload %@ requires class definitions in %@".fmt(name, this.toString()), isObject(klass));
 
-        if (!instance) {
-          instance = klass.create();
-          Ember.set(this, name, instance);
+          if (!instance) {
+            instance = klass.create();
+            Ember.set(this, name, instance);
+          }
+
+          // Recurse over any nested sideloads
+          this.updateSideloadApiData.call(instance, json[name]);
+
+          var data = Ember.get(instance, 'data');
+          Ember.Resource.deepMerge(data, instance.constructor.parse(json[name]));
         }
-        var data = Ember.get(instance, 'data');
-        Ember.Resource.deepMerge(data, instance.constructor.parse(json[name]));
       };
     },
 
@@ -800,9 +806,11 @@
       };
 
       sideloads = this.constructor.sideloads;
-
-      if(sideloads && Ember.keys(sideloads).length !== 0) {
-        ajaxOptions.data = {include: Ember.keys(sideloads).join(",")};
+      if (isObject(sideloads) && !Ember.isArray(sideloads)) {
+        sideloads = Ember.keys(sideloads);
+        if (sideloads !== 0) {
+          ajaxOptions.data = {include: sideloads.join(",")};
+        }
       }
 
       this.deferedFetch = Ember.Resource.ajax(ajaxOptions).done(function(json) {
