@@ -740,8 +740,40 @@
     updateWithApiData: function(json) {
       var data = Ember.get(this, 'data');
       Ember.beginPropertyChanges(data);
+      this.updateSideloadApiData(json);
       Ember.Resource.deepMerge(data, this.constructor.parse(json));
       Ember.endPropertyChanges(data);
+    },
+
+    updateSideloadApiData: function(json) {
+      var sideloads = this.constructor.sideloads;
+      if (!isObject(sideloads) || Ember.isArray(sideloads) || Ember.keys(sideloads).length === 0) { return; }
+
+      for (var name in sideloads) {
+        if (!sideloads.hasOwnProperty(name)) { continue; }
+
+        var klass       = sideloads[name],
+            jsonSegment = json[name],
+            instance;
+
+        if (isString(klass)) { klass = Ember.getPath(klass); }
+
+        ember_assert("sideload \"%@\" requires Ember.Resource definition in %@"
+          .fmt(name, this.toString()), isObject(klass));
+
+        if (Ember.isArray(jsonSegment)) {
+          var collection = [], i;
+          for (i = 0; i < jsonSegment.length; i++) {
+            collection.push(klass.create(jsonSegment[i]));
+          }
+          instance = Em.ResourceCollection.create({content: collection, type: klass});
+        } else {
+          instance = klass.create();
+          this.updateWithApiData.call(instance, jsonSegment);
+        }
+
+        Ember.set(this, name, instance);
+      };
     },
 
     willFetch: function() {},
@@ -779,9 +811,11 @@
       };
 
       sideloads = this.constructor.sideloads;
-
-      if(sideloads && sideloads.length !== 0) {
-        ajaxOptions.data = {include: sideloads.join(",")};
+      if (isObject(sideloads) && !Ember.isArray(sideloads)) {
+        sideloads = Ember.keys(sideloads);
+        if (sideloads !== 0) {
+          ajaxOptions.data = {include: sideloads.join(",")};
+        }
       }
 
       this.deferedFetch = Ember.Resource.ajax(ajaxOptions).done(function(json) {
