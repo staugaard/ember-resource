@@ -23,24 +23,40 @@ describe('A Resource instance', function() {
         // global-path-name-to-object conversion functionality
         window.Sideload = {};
 
+        json = {
+          foods: { status: 'hungry'},
+          burger: { cheese: true, pounds: 0.5 },
+          smoothie: { fruit: true, vegan: { flavor: 'tofu', numberAsString: '123' }},
+          appetizers: [ {name: 'salad'}, {name: 'soup'} ]
+        };
+
+        // Basic sideload
+        Sideload.Burger        = Em.Resource.define({ schema: { cheese: Boolean, pounds: Number }});
+
+        // Sideload with nested sideload (parent)
         Sideload.Smoothie      = Em.Resource.define({
           schema: { fruit: Boolean },
           sideloads: { vegan: 'Sideload.SmoothieVegan'}
         });
+
+        // Sideload with nested sideload (child)
         Sideload.SmoothieVegan = Em.Resource.define({ schema: { flavor: String, numberAsString: String }});
-        Sideload.Burger        = Em.Resource.define({ schema: { cheese: Boolean, pounds: Number }});
+
+        // Collection sideload
+        Sideload.Appetizer     = Em.Resource.define({ schema: { name: String }});
+
+        // Resource with sideloads
         Subject                = Em.Resource.define({
           url: "/foods",
           schema: { status: String },
-          sideloads: { burger: Sideload.Burger, smoothie: 'Sideload.Smoothie' },
+          sideloads: {
+            burger:     Sideload.Burger,
+            smoothie:   'Sideload.Smoothie',
+            appetizers: 'Sideload.Appetizer'
+          },
           parse: function(json) { return json.foods; }
         });
 
-        json = {
-          foods: { status: 'hungry' },
-          burger: { cheese: true, pounds: 0.5 },
-          smoothie: { fruit: true, vegan: { flavor: 'tofu', numberAsString: '123' }}
-        };
         spyOn(Em.Resource, 'ajax').andReturn($.when(json));
 
         food = Subject.create({id: 1});
@@ -60,13 +76,26 @@ describe('A Resource instance', function() {
           url: "/foods/1",
           resource: food,
           operation: 'read',
-          data: {include: "burger,smoothie"}
+          data: {include: "burger,smoothie,appetizers"}
         });
       });
 
-      it("should accept a sideload class or path (string)", function() {
-        expect(food.burger.isEmberResource).toBeTruthy()
+      it("should accept a sideload class defined as a path string", function() {
         expect(food.smoothie.isEmberResource).toBeTruthy();
+      });
+
+      it("should accept a sideload class defined as an object", function() {
+        expect(food.burger.isEmberResource).toBeTruthy();
+      });
+
+      it("should create an Ember.ResourceCollection for sideloads that return a collection", function() {
+        expect(food.appetizers.isEmberResourceCollection).toBeTruthy();
+      });
+
+      it("should create a list of items of to specified Ember.Resourece class", function() {
+        var item = food.appetizers.getPath('content.firstObject');
+        expect(item instanceof Ember.Resource).toBeTruthy();
+        expect(item instanceof Sideload.Appetizer).toBeTruthy();
       });
 
       it("should still load data in sideload parent", function() {
@@ -77,6 +106,12 @@ describe('A Resource instance', function() {
         expect(food.burger.get('cheese')).toBeTruthy();
         expect(food.burger.get('pounds')).toEqual(0.5);
         expect(food.smoothie.get('fruit')).toBeTruthy();
+      });
+
+      it("should add sideload data for a collection", function() {
+        var content = food.appetizers.get('content');
+        expect(content.length).toEqual(2);
+        expect(content[0].get('name')).toEqual('salad');
       });
 
       it("should recurse through nested sideloads", function() {

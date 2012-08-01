@@ -750,24 +750,29 @@
       if (!isObject(sideloads) || Ember.isArray(sideloads) || Ember.keys(sideloads).length === 0) { return; }
 
       for (var name in sideloads) {
-        if (sideloads.hasOwnProperty(name)) {
-          var klass    = sideloads[name],
-              instance = Ember.get(this, name);
+        if (!sideloads.hasOwnProperty(name)) { continue; }
 
-          if (isString(klass)) { klass = Ember.getPath(klass); }
-          ember_assert("sideload %@ requires class definitions in %@".fmt(name, this.toString()), isObject(klass));
+        var klass       = sideloads[name],
+            jsonSegment = json[name],
+            instance;
 
-          if (!instance) {
-            instance = klass.create();
-            Ember.set(this, name, instance);
+        if (isString(klass)) { klass = Ember.getPath(klass); }
+
+        ember_assert("sideload \"%@\" requires Ember.Resource definition in %@"
+          .fmt(name, this.toString()), isObject(klass));
+
+        if (Ember.isArray(jsonSegment)) {
+          var collection = [], i;
+          for (i = 0; i < jsonSegment.length; i++) {
+            collection.push(klass.create(jsonSegment[i]));
           }
-
-          // Recurse over any nested sideloads
-          this.updateSideloadApiData.call(instance, json[name]);
-
-          var data = Ember.get(instance, 'data');
-          Ember.Resource.deepMerge(data, instance.constructor.parse(json[name]));
+          instance = Em.ResourceCollection.create({content: collection, type: klass});
+        } else {
+          instance = klass.create();
+          this.updateWithApiData.call(instance, jsonSegment);
         }
+
+        Ember.set(this, name, instance);
       };
     },
 
