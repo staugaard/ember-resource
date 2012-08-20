@@ -1035,7 +1035,7 @@
       var schema = expandSchema(options.schema);
       schema = mergeSchemas(schema, this.schema);
 
-      var klass = this.extend(createSchemaProperties(schema));
+      var klass = this.extend(createSchemaProperties(schema), Ember.Resource.RemoteExpiry);
 
       var classOptions = {
         schema: schema
@@ -1102,7 +1102,7 @@
     }
   }, Ember.Resource.Lifecycle.classMixin);
 
-  Ember.ResourceCollection = Ember.ArrayProxy.extend({
+  Ember.ResourceCollection = Ember.ArrayProxy.extend(Ember.Resource.RemoteExpiry, {
     isEmberResourceCollection: true,
     type: Ember.required(),
 
