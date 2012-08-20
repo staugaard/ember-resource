@@ -255,8 +255,64 @@ if (typeof this === 'object') this.LRUCache = LRUCache;
     resourcePropertyWillChange: window.Ember.K,
     resourcePropertyDidChange: window.Ember.K
   });
+  
+}());(function(exports) {
+  var NullTransport = {
+    subscribe: Em.K,
+    unsubscribe: Em.K
+  };
 
-}());(function() {
+  exports.Ember.Resource.PushTransport = NullTransport;
+
+  var RemoteExpiry = Em.Mixin.create({
+    init: function() {
+      var ret = this._super(),
+          self = this,
+          remoteExpiryScope = this.get('remoteExpiryKey');
+
+      if(!this.get('remoteExpiryKey')) { return; }
+
+      this.set('_subscribedForExpiry', false);
+
+      if(!remoteExpiryScope) {
+        return ret;
+      }
+
+      Ember.addListener(this, 'didFetch', this, function() {
+        self.subscribeForExpiry();
+      });
+      
+      return ret;
+    },
+
+    subscribeForExpiry: function() {
+      var remoteExpiryScope = this.get('remoteExpiryKey'),
+          updatedAt,
+          self = this;
+
+      if(!remoteExpiryScope) {
+        return ret;
+      }
+
+      Ember.Resource.PushTransport.subscribe(remoteExpiryScope, function(message) {
+        updatedAt = new Date(message.updated_at);
+        if(self.stale(updatedAt)) {
+          self.set('updatedAt', updatedAt);
+          self.expire();
+        }
+      });
+
+      this.set('_subscribedForExpiry', true);      
+    },
+
+    stale: function(updatedAt) {
+      return !this.get('updatedAt') || (+this.get('updatedAt') < +updatedAt);
+    }
+  });
+
+  exports.Ember.Resource.RemoteExpiry = RemoteExpiry;
+}(this));
+(function() {
   Ember.Resource.IdentityMap = function(limit) {
     this.cache = new LRUCache(limit || Ember.Resource.IdentityMap.DEFAULT_IDENTITY_MAP_LIMIT);
   };
@@ -1323,7 +1379,7 @@ if (typeof this === 'object') this.LRUCache = LRUCache;
       var schema = expandSchema(options.schema);
       schema = mergeSchemas(schema, this.schema);
 
-      var klass = this.extend(createSchemaProperties(schema));
+      var klass = this.extend(createSchemaProperties(schema), Ember.Resource.RemoteExpiry);
 
       var classOptions = {
         schema: schema
@@ -1390,7 +1446,7 @@ if (typeof this === 'object') this.LRUCache = LRUCache;
     }
   }, Ember.Resource.Lifecycle.classMixin);
 
-  Ember.ResourceCollection = Ember.ArrayProxy.extend({
+  Ember.ResourceCollection = Ember.ArrayProxy.extend(Ember.Resource.RemoteExpiry, {
     isEmberResourceCollection: true,
     type: Ember.required(),
 
