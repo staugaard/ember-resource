@@ -48,8 +48,8 @@
     },
 
     updateExpiry: function(message) {
-      if(!message || !message.value || !message.value.updated_at) return;
-      var updatedAt = new Date(message.value.updated_at * 1000);
+      var updatedAt = message && message.updatedAt;
+      if(!updatedAt) return;
       if(this.stale(updatedAt)) {
         this.set('updatedAt', updatedAt);
         this.expire();

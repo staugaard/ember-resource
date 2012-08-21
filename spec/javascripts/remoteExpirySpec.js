@@ -64,14 +64,13 @@ describe('remote expiry', function() {
         remoteExpiryKey: "foo"
       });
       this.resource = Resource.create();
+      this.date = new Date(1345511310 * 1000);
       spyOn(this.resource, 'expire');
     });
 
     it('should expire resource when stale', function() {
       this.resource.updateExpiry({
-        value: {
-          updated_at: 1345511310
-        }
+        updatedAt: this.date
       });
       expect(this.resource.expire).toHaveBeenCalled();
     });
@@ -79,9 +78,7 @@ describe('remote expiry', function() {
     it('should not expire resource when fresh', function() {
       this.resource.set('updatedAt', new Date((1345511310 + 200) * 1000));
       this.resource.updateExpiry({
-        value: {
-          updated_at: 1345511310
-        }
+        updatedAt: this.date
       });
       expect(this.resource.expire).not.toHaveBeenCalled();
     });
