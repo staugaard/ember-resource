@@ -30,22 +30,30 @@
 
     subscribeForExpiry: function() {
       var remoteExpiryScope = this.get('remoteExpiryKey'),
-          updatedAt,
           self = this;
 
       if(!remoteExpiryScope) {
         return;
       }
 
+      if(this.get('_subscribedForExpiry')) {
+        return;
+      }
+
       Ember.Resource.PushTransport.subscribe(remoteExpiryScope, function(message) {
-        updatedAt = new Date(message.updated_at);
-        if(self.stale(updatedAt)) {
-          self.set('updatedAt', updatedAt);
-          self.expire();
-        }
+        self.updateExpiry(message);
       });
 
       this.set('_subscribedForExpiry', true);
+    },
+
+    updateExpiry: function(message) {
+      var updatedAt = message && message.updatedAt;
+      if(!updatedAt) return;
+      if(this.stale(updatedAt)) {
+        this.set('updatedAt', updatedAt);
+        this.expire();
+      }
     },
 
     stale: function(updatedAt) {
@@ -54,4 +62,5 @@
   });
 
   Ember.Resource.RemoteExpiry = RemoteExpiry;
+
 }(this));
