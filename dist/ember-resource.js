@@ -257,14 +257,15 @@ if (typeof this === 'object') this.LRUCache = LRUCache;
   });
   
 }());(function(exports) {
-  var NullTransport = {
-    subscribe: Em.K,
-    unsubscribe: Em.K
+
+  var Ember = exports.Ember, NullTransport = {
+    subscribe: Ember.K,
+    unsubscribe: Ember.K
   };
 
-  exports.Ember.Resource.PushTransport = NullTransport;
+  Ember.Resource.PushTransport = NullTransport;
 
-  var RemoteExpiry = Em.Mixin.create({
+  var RemoteExpiry = Ember.Mixin.create({
     init: function() {
       var ret = this._super(),
           self = this,
@@ -281,28 +282,36 @@ if (typeof this === 'object') this.LRUCache = LRUCache;
       Ember.addListener(this, 'didFetch', this, function() {
         self.subscribeForExpiry();
       });
-      
+
       return ret;
     },
 
     subscribeForExpiry: function() {
       var remoteExpiryScope = this.get('remoteExpiryKey'),
-          updatedAt,
           self = this;
 
       if(!remoteExpiryScope) {
-        return ret;
+        return;
+      }
+
+      if(this.get('_subscribedForExpiry')) {
+        return;
       }
 
       Ember.Resource.PushTransport.subscribe(remoteExpiryScope, function(message) {
-        updatedAt = new Date(message.updated_at);
-        if(self.stale(updatedAt)) {
-          self.set('updatedAt', updatedAt);
-          self.expire();
-        }
+        self.updateExpiry(message);
       });
 
-      this.set('_subscribedForExpiry', true);      
+      this.set('_subscribedForExpiry', true);
+    },
+
+    updateExpiry: function(message) {
+      var updatedAt = message && message.updatedAt;
+      if(!updatedAt) return;
+      if(this.stale(updatedAt)) {
+        this.set('updatedAt', updatedAt);
+        this.expire();
+      }
     },
 
     stale: function(updatedAt) {
@@ -310,7 +319,8 @@ if (typeof this === 'object') this.LRUCache = LRUCache;
     }
   });
 
-  exports.Ember.Resource.RemoteExpiry = RemoteExpiry;
+  Ember.Resource.RemoteExpiry = RemoteExpiry;
+
 }(this));
 (function() {
   Ember.Resource.IdentityMap = function(limit) {
