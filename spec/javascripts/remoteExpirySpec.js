@@ -51,7 +51,7 @@ describe('remote expiry', function() {
       expect(this.spy.callCount).toEqual(1);
     });
 
-    it('not subscribe more than once', function() {
+    it('should not subscribe more than once', function() {
       Ember.sendEvent(resource, 'didFetch');
       Ember.run.sync();
       expect(this.spy.callCount).toEqual(1);
@@ -76,7 +76,7 @@ describe('remote expiry', function() {
       expect(this.resource.expire).toHaveBeenCalled();
     });
 
-    it('not should expire resource when fresh', function() {
+    it('should not expire resource when fresh', function() {
       this.resource.set('updatedAt', new Date((1345511310 + 200) * 1000));
       this.resource.updateExpiry({
         value: {
@@ -86,7 +86,7 @@ describe('remote expiry', function() {
       expect(this.resource.expire).not.toHaveBeenCalled();
     });
 
-    it('not should expire resource when message is malformed', function() {
+    it('should not expire resource when message is malformed', function() {
       this.resource.updateExpiry({});
       expect(this.resource.expire).not.toHaveBeenCalled();
     });
