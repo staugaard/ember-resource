@@ -719,7 +719,10 @@
           isExpired = expireAt.getTime() <= now.getTime();
         }
 
-        if (isExpired !== Ember.get(this, 'isExpired')) {
+        var oldIsExpired = Ember.get(this, 'isExpired');
+
+        if (( isExpired && !oldIsExpired ) ||
+            ( (isExpired === false) && oldIsExpired)) {
           Ember.set(this, 'isExpired', isExpired);
         }
       }.observes('Ember.Resource.Lifecycle.clock.now', 'expireAt', 'resourceState'),

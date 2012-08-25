@@ -1,3 +1,4 @@
+/*globals Ember */
 describe('Lifecycle', function() {
   var Person, server;
 
@@ -31,7 +32,7 @@ describe('Lifecycle', function() {
     });
 
     it('should not be expired', function() {
-      expect(person.get('isExpired')).toBe(false);
+      expect(person.get('isExpired')).toBeFalsy();
     });
 
     it('should never expire', function() {
@@ -94,12 +95,12 @@ describe('Lifecycle', function() {
       var expiry = new Date();
       expiry.setFullYear(expiry.getFullYear() + 1);
       person.set('expireAt', expiry);
-      expect(person.get('isExpired')).toBe(false);
+      expect(person.get('isExpired')).toBeFalsy();
       expect(person.get('resourceState')).toBe(Ember.Resource.Lifecycle.UNFETCHED);
     });
 
     it('should expire when "expire" is called', function() {
-      expect(person.get('isExpired')).toBe(false);
+      expect(person.get('isExpired')).toBeFalsy();
       person.expire();
       waitsFor(function() {
         return person.get('isExpired');
