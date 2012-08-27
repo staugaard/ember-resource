@@ -251,12 +251,14 @@ if (typeof this === 'object') this.LRUCache = LRUCache;
 
   window.Ember = window.Ember || window.SC;
 
-  window.Ember.Resource = Ember.Object.extend({
+  window.Ember.Resource = window.Ember.Object.extend({
     resourcePropertyWillChange: window.Ember.K,
     resourcePropertyDidChange: window.Ember.K
   });
-  
-}());(function(exports) {
+
+  window.Ember.Resource.SUPPORT_AUTOFETCH = true;
+}());
+(function(exports) {
 
   var Ember = exports.Ember, NullTransport = {
     subscribe: Ember.K,
@@ -413,7 +415,13 @@ if (typeof this === 'object') this.LRUCache = LRUCache;
     setValue: Ember.required(Function),
 
     dependencies: function() {
-      return ['data.' + this.get('path'), 'isExpired'];
+      var deps = ['data.' + this.get('path')];
+
+      if(Ember.Resource.SUPPORT_AUTOFETCH) {
+        deps.push('isExpired');
+      }
+
+      return deps;
     }.property('path'),
 
     data: function(instance) {
@@ -985,6 +993,10 @@ if (typeof this === 'object') this.LRUCache = LRUCache;
 
         var self = this;
 
+        if(!Ember.Resource.SUPPORT_AUTOFETCH) {
+          this.set('autoFetch', false);
+        }
+
         var updateExpiry = function() {
           var expireAt = new Date();
           expireAt.setSeconds(expireAt.getSeconds() + Ember.get(self, 'expireIn'));
@@ -1073,7 +1085,10 @@ if (typeof this === 'object') this.LRUCache = LRUCache;
           isExpired = expireAt.getTime() <= now.getTime();
         }
 
-        if (isExpired !== Ember.get(this, 'isExpired')) {
+        var oldIsExpired = Ember.get(this, 'isExpired');
+
+        if (( isExpired && !oldIsExpired ) ||
+            ( (isExpired === false) && oldIsExpired)) {
           Ember.set(this, 'isExpired', isExpired);
         }
       }.observes('Ember.Resource.Lifecycle.clock.now', 'expireAt', 'resourceState'),
@@ -1332,8 +1347,9 @@ if (typeof this === 'object') this.LRUCache = LRUCache;
             this.identityMap.put(id, instance);
           } else {
             instance.updateWithApiData(data);
-            // ignore incoming resourceState argument
+            // ignore incoming resourceState and id arguments
             delete options.resourceState;
+            delete options.id;
           }
         } else {
           instance = this._super.call(this, { data: data });
