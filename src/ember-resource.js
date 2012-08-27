@@ -59,7 +59,13 @@
     setValue: Ember.required(Function),
 
     dependencies: function() {
-      return ['data.' + this.get('path'), 'isExpired'];
+      var deps = ['data.' + this.get('path')];
+
+      if(Ember.Resource.SUPPORT_AUTOFETCH) {
+        deps.push('isExpired');
+      }
+
+      return deps;
     }.property('path'),
 
     data: function(instance) {
@@ -630,6 +636,10 @@
         this._super.apply(this, arguments);
 
         var self = this;
+
+        if(!Ember.Resource.SUPPORT_AUTOFETCH) {
+          this.set('autoFetch', false);
+        }
 
         var updateExpiry = function() {
           var expireAt = new Date();
