@@ -56,6 +56,12 @@
       }
     },
 
+    autoFetchOnRemoteExpiry: function() {
+      if(Ember.get(this, 'isExpired') && Ember.get(this, 'remoteExpiryAutoFetch')) {
+        this.fetch();
+      }
+    }.observes('isExpired'),
+
     stale: function(updatedAt) {
       return !this.get('updatedAt') || (+this.get('updatedAt') < +updatedAt);
     }

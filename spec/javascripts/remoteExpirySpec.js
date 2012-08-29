@@ -17,7 +17,6 @@ describe('remote expiry', function() {
     });
   });
 
-
   describe('on a resource with no remote expiry key', function() {
     beforeEach(function() {
       Resource = Ember.Resource.define().extend();
@@ -89,4 +88,55 @@ describe('remote expiry', function() {
     });
   });
 
+  describe("with remote expiry auto fetch", function() {
+    var resource;
+    beforeEach(function() {
+      Resource = Ember.Resource.define().extend({
+        remoteExpiryKey: "foo"
+      });
+      resource = Resource.create();
+      this.date = new Date(1345511310 * 1000);
+      spyOn(resource, 'fetch');
+    });
+
+    describe("turned on", function() {
+      beforeEach(function() {
+        resource.set('remoteExpiryAutoFetch', true);
+      });
+
+      it('should refetch', function() {
+        resource.updateExpiry({
+          updatedAt: this.date
+        });
+
+        waitsFor(function() {
+          return resource.get('isExpired');
+        }, 'resource never expired', 1000);
+
+        runs(function() {
+          expect(resource.fetch).toHaveBeenCalled();
+        });
+      });
+    });
+
+    describe("turned off", function() {
+      beforeEach(function() {
+        resource.set('remoteExpiryAutoFetch', false);
+      });
+
+      it('should not refetch', function() {
+        resource.updateExpiry({
+          updatedAt: this.date
+        });
+
+        waitsFor(function() {
+          return resource.get('isExpired');
+        }, 'resource never expired', 1000);
+
+        runs(function() {
+          expect(resource.fetch).not.toHaveBeenCalled();
+        });
+      });
+    });
+  });
 });
