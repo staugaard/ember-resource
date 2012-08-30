@@ -52,15 +52,14 @@
       if(!updatedAt) return;
       if(this.stale(updatedAt)) {
         this.set('updatedAt', updatedAt);
-        this.expire();
+        if(this.get('remoteExpiryAutoFetch')) {
+          this.set('isExpired', true);
+          this.fetch();
+        } else {
+          this.expire();
+        }
       }
     },
-
-    autoFetchOnRemoteExpiry: function() {
-      if(Ember.get(this, 'isExpired') && Ember.get(this, 'remoteExpiryAutoFetch')) {
-        this.fetch();
-      }
-    }.observes('isExpired'),
 
     stale: function(updatedAt) {
       return !this.get('updatedAt') || (+this.get('updatedAt') < +updatedAt);

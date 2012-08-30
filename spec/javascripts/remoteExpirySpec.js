@@ -1,33 +1,33 @@
 /*globals Ember, jasmine */
 describe('remote expiry', function() {
-  var Resource, resource;
+  var Resource;
   describe('on a resource with a remote expiry key', function() {
     beforeEach(function() {
       Resource = Ember.Resource.define().extend({
         remoteExpiryKey: "foo"
       });
-      resource = Resource.create();
-      spyOn(resource, 'subscribeForExpiry');
+      this.resource = Resource.create();
+      spyOn(this.resource, 'subscribeForExpiry');
     });
 
     it('should subscribe for expiry on fetch', function() {
-      Ember.sendEvent(resource, 'didFetch');
+      Ember.sendEvent(this.resource, 'didFetch');
       Ember.run.sync();
-      expect(resource.subscribeForExpiry).toHaveBeenCalled();
+      expect(this.resource.subscribeForExpiry).toHaveBeenCalled();
     });
   });
 
   describe('on a resource with no remote expiry key', function() {
     beforeEach(function() {
       Resource = Ember.Resource.define().extend();
-      resource = Resource.create();
-      spyOn(resource, 'subscribeForExpiry');
+      this.resource = Resource.create();
+      spyOn(this.resource, 'subscribeForExpiry');
     });
 
     it('should not subscribe for expiry on fetch', function() {
-      Ember.sendEvent(resource, 'didFetch');
+      Ember.sendEvent(this.resource, 'didFetch');
       Ember.run.sync();
-      expect(resource.subscribeForExpiry).not.toHaveBeenCalled();
+      expect(this.resource.subscribeForExpiry).not.toHaveBeenCalled();
     });
   });
 
@@ -51,7 +51,7 @@ describe('remote expiry', function() {
     });
 
     it('should not subscribe more than once', function() {
-      Ember.sendEvent(resource, 'didFetch');
+      Ember.sendEvent(this.resource, 'didFetch');
       Ember.run.sync();
       expect(this.spy.callCount).toEqual(1);
     });
@@ -65,6 +65,7 @@ describe('remote expiry', function() {
       this.resource = Resource.create();
       this.date = new Date(1345511310 * 1000);
       spyOn(this.resource, 'expire');
+      spyOn(this.resource, 'fetch');
     });
 
     it('should expire resource when stale', function() {
@@ -86,26 +87,16 @@ describe('remote expiry', function() {
       this.resource.updateExpiry({});
       expect(this.resource.expire).not.toHaveBeenCalled();
     });
-  });
 
-  describe("with remote expiry auto fetch", function() {
-    var resource;
-    beforeEach(function() {
-      Resource = Ember.Resource.define().extend({
-        remoteExpiryKey: "foo"
-      });
-      resource = Resource.create();
-      this.date = new Date(1345511310 * 1000);
-      spyOn(resource, 'fetch');
-    });
-
-    describe("turned on", function() {
+    describe("with remote expiry auto fetch", function() {
       beforeEach(function() {
-        resource.set('remoteExpiryAutoFetch', true);
+        this.resource.set('remoteExpiryAutoFetch', true);
       });
 
-      it('should refetch', function() {
-        resource.updateExpiry({
+      it('should refetch resource when stale', function() {
+        var resource = this.resource;
+
+        this.resource.updateExpiry({
           updatedAt: this.date
         });
 
@@ -114,28 +105,24 @@ describe('remote expiry', function() {
         }, 'resource never expired', 1000);
 
         runs(function() {
-          expect(resource.fetch).toHaveBeenCalled();
+          expect(this.resource.fetch).toHaveBeenCalled();
+          expect(this.resource.expire).not.toHaveBeenCalled();
         });
       });
-    });
 
-    describe("turned off", function() {
-      beforeEach(function() {
-        resource.set('remoteExpiryAutoFetch', false);
-      });
-
-      it('should not refetch', function() {
-        resource.updateExpiry({
+      it('should not refetch resource when fresh', function() {
+        this.resource.set('updatedAt', new Date((1345511310 + 200) * 1000));
+        this.resource.updateExpiry({
           updatedAt: this.date
         });
+        expect(this.resource.expire).not.toHaveBeenCalled();
+        expect(this.resource.fetch).not.toHaveBeenCalled();
+      });
 
-        waitsFor(function() {
-          return resource.get('isExpired');
-        }, 'resource never expired', 1000);
-
-        runs(function() {
-          expect(resource.fetch).not.toHaveBeenCalled();
-        });
+      it('should not refetch resource when message is malformed', function() {
+        this.resource.updateExpiry({});
+        expect(this.resource.expire).not.toHaveBeenCalled();
+        expect(this.resource.fetch).not.toHaveBeenCalled();
       });
     });
   });
