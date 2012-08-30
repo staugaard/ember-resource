@@ -13,8 +13,6 @@
           self = this,
           remoteExpiryScope = this.get('remoteExpiryKey');
 
-      if(!this.get('remoteExpiryKey')) { return; }
-
       this.set('_subscribedForExpiry', false);
 
       if(!remoteExpiryScope) {
