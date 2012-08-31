@@ -49,7 +49,7 @@
       var updatedAt = message && message.updatedAt;
       if(!updatedAt) return;
       if(this.stale(updatedAt)) {
-        this.set('updatedAt', updatedAt);
+        this.set('expiryUpdatedAt', updatedAt);
         if(this.get('remoteExpiryAutoFetch')) {
           this.set('isExpired', true);
           this.fetch();
@@ -60,7 +60,7 @@
     },
 
     stale: function(updatedAt) {
-      return !this.get('updatedAt') || (+this.get('updatedAt') < +updatedAt);
+      return !this.get('expiryUpdatedAt') || (+this.get('expiryUpdatedAt') < +updatedAt);
     }
   });
 

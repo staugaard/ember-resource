@@ -63,7 +63,7 @@ describe('remote expiry', function() {
         remoteExpiryKey: "foo"
       });
       this.resource = Resource.create();
-      this.date = new Date(1345511310 * 1000);
+      this.date = 1345511310;
       spyOn(this.resource, 'expire');
       spyOn(this.resource, 'fetch');
     });
@@ -76,7 +76,7 @@ describe('remote expiry', function() {
     });
 
     it('should not expire resource when fresh', function() {
-      this.resource.set('updatedAt', new Date((1345511310 + 200) * 1000));
+      this.resource.set('expiryUpdatedAt', 1345511310 + 200);
       this.resource.updateExpiry({
         updatedAt: this.date
       });
@@ -111,7 +111,7 @@ describe('remote expiry', function() {
       });
 
       it('should not refetch resource when fresh', function() {
-        this.resource.set('updatedAt', new Date((1345511310 + 200) * 1000));
+        this.resource.set('expiryUpdatedAt', 1345511310 + 200);
         this.resource.updateExpiry({
           updatedAt: this.date
         });
