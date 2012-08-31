@@ -273,8 +273,6 @@ if (typeof this === 'object') this.LRUCache = LRUCache;
           self = this,
           remoteExpiryScope = this.get('remoteExpiryKey');
 
-      if(!this.get('remoteExpiryKey')) { return; }
-
       this.set('_subscribedForExpiry', false);
 
       if(!remoteExpiryScope) {
@@ -311,13 +309,18 @@ if (typeof this === 'object') this.LRUCache = LRUCache;
       var updatedAt = message && message.updatedAt;
       if(!updatedAt) return;
       if(this.stale(updatedAt)) {
-        this.set('updatedAt', updatedAt);
-        this.expire();
+        this.set('expiryUpdatedAt', updatedAt);
+        if(this.get('remoteExpiryAutoFetch')) {
+          this.set('isExpired', true);
+          this.fetch();
+        } else {
+          this.expire();
+        }
       }
     },
 
     stale: function(updatedAt) {
-      return !this.get('updatedAt') || (+this.get('updatedAt') < +updatedAt);
+      return !this.get('expiryUpdatedAt') || (+this.get('expiryUpdatedAt') < +updatedAt);
     }
   });
 
