@@ -1334,7 +1334,7 @@ if (typeof this === 'object') this.LRUCache = LRUCache;
       data    = data    || {};
       options = options || {};
 
-      var klass = this.subclassFor(options, data);
+      var klass = this.subclassFor(options, data), idToRestore = options.id;
 
       if (klass === this) {
         var instance;
@@ -1378,6 +1378,7 @@ if (typeof this === 'object') this.LRUCache = LRUCache;
         }
         Ember.endPropertyChanges(instance);
 
+        options.id = idToRestore;
         return instance;
       } else {
         return klass.create(options, data);
