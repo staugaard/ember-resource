@@ -88,7 +88,7 @@ MyApp.Post = Ember.Resource.define({
   url: '/posts',
   schema: {
     id:    Number,
-    title: Sting,
+    title: String,
     body:  String,
     blog: {
       type: MyApp.Blog
