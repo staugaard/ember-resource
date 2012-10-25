@@ -533,10 +533,10 @@ if (typeof this === 'object') this.LRUCache = LRUCache;
       if (this.typeCast) {
         value = this.typeCast(value);
       }
-      if (value !== null && value !== undefined && Ember.typeOf(value.toJSON) == 'function') {
-        if (Ember.typeOf(value) === 'date') {
+      if (value !== null && value !== undefined) {
+        if (Ember.typeOf(value) === 'date' && Ember.typeOf(value.toString) === 'function') {
           value = value.toString();
-        } else {
+        } else if (Ember.typeOf(value.toJSON) == 'function') {
           value = value.toJSON();
         }
       }
