@@ -160,7 +160,7 @@ describe('schema definition', function() {
     expect(instance.get('updatedAt')).toEqual(date);
 
     date = new Date();
-    dateString = date.toJSON();
+    dateString = date.toString();
 
     instance.set('createdAt', date);
     expect(instance.getPath('data.createdAt')).toEqual(dateString, "convert a Date instance to a string");
@@ -174,7 +174,7 @@ describe('schema definition', function() {
     var Model = Em.Resource.define({ schema: { birthday: Date } });
     var model = Model.create();
     model.set('birthday', date);
-    expect(date.toJSON()).toEqual(model.get('birthday').toJSON());
+    expect(date.toString()).toEqual(model.get('birthday').toString());
   });
 
   it('should create Boolean properties', function() {
