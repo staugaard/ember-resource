@@ -175,7 +175,11 @@
         value = this.typeCast(value);
       }
       if (value !== null && value !== undefined && Ember.typeOf(value.toJSON) == 'function') {
-        value = value.toJSON();
+        if (Ember.typeOf(value) === 'date') {
+          value = value.toString();
+        } else {
+          value = value.toJSON();
+        }
       }
       Ember.Resource.deepSet(data, this.get('path'), value);
     },

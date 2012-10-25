@@ -145,7 +145,7 @@ describe('schema definition', function() {
   it('should create Date properties', function() {
     var date = new Date();
     var dateString = date.toJSON();
-    
+
     var Model = Ember.Resource.define({
       schema: {
         createdAt: Date,
@@ -164,9 +164,17 @@ describe('schema definition', function() {
 
     instance.set('createdAt', date);
     expect(instance.getPath('data.createdAt')).toEqual(dateString, "convert a Date instance to a string");
-    
+
     instance.set('updatedAt', dateString);
     expect(instance.getPath('data.updatedAt')).toEqual(dateString, 'convert a string ("' + dateString + '") to a string');
+  });
+
+  it('shold set and retrieve dates properly', function() {
+    var date = new Date();
+    var Model = Em.Resource.define({ schema: { birthday: Date } });
+    var model = Model.create();
+    model.set('birthday', date);
+    expect(date.toJSON()).toEqual(model.get('birthday').toJSON());
   });
 
   it('should create Boolean properties', function() {
