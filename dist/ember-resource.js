@@ -390,7 +390,9 @@ if (typeof this === 'object') this.LRUCache = LRUCache;
         Ember.set(obj, key, newObj);
       }
 
+      Ember.propertyWillChange(newObj, path);
       Ember.Resource.deepSet(newObj, path, value);
+      Ember.propertyDidChange(newObj, path);
     }
   };
 
@@ -403,7 +405,9 @@ if (typeof this === 'object') this.LRUCache = LRUCache;
         newValue = Ember.get(objB, key);
 
         if (Ember.typeOf(newValue) === 'object' && Ember.typeOf(oldValue) === 'object') {
+          Ember.propertyWillChange(objA, key);
           Ember.Resource.deepMerge(oldValue, newValue);
+          Ember.propertyDidChange(objA, key);
         } else {
           Ember.set(objA, key, newValue);
         }

@@ -149,6 +149,35 @@ describe('Saving a resource instance', function() {
         expect(resource.get('subject')).toBeUndefined();
         expect(resource.get('name')).toBe('foo');
       })
+
+      describe('resource has one embedded association', function() {
+        beforeEach(function() {
+          var Address = Ember.Resource.define({
+            schema: {
+              street: String,
+              zip:    Number,
+              city:   String
+            }
+          });
+          var Person = Ember.Resource.define({
+            schema: {
+              id:   Number,
+              name: String,
+              address: {type: Address, nested: true}
+            },
+            url: '/persons'
+          });
+          server.respondWith('POST', '/persons', [201, { "Content-Type": "application/json" }, '{ "id": 1, "address": { "street": "baz" } }']);
+          resource = Person.create({ name: 'foo' }, { address: { street: 'bar' } });
+        });
+
+        it("should update with the data given", function() {
+          resource.save();
+          server.respond();
+          expect(resource.get('id')).toBe(1);
+          expect(resource.getPath('address.street')).toBe('baz');
+        });
+      });
     });
 
   });
