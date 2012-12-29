@@ -341,6 +341,10 @@ if (typeof this === 'object') this.LRUCache = LRUCache;
       return LRUCache.prototype.put.apply(this.cache, arguments);
     },
 
+    remove: function() {
+      return LRUCache.prototype.remove.apply(this.cache, arguments);
+    },
+
     clear: function() {
       return LRUCache.prototype.removeAll.apply(this.cache, arguments);
     },
@@ -357,7 +361,8 @@ if (typeof this === 'object') this.LRUCache = LRUCache;
 
   Ember.Resource.IdentityMap.DEFAULT_IDENTITY_MAP_LIMIT = 500;
 
-}());(function(exports) {
+}());
+(function(exports) {
 
   var expandSchema, expandSchemaItem, createSchemaProperties,
       mergeSchemas;
@@ -1259,6 +1264,13 @@ if (typeof this === 'object') this.LRUCache = LRUCache;
       });
 
       return deferedSave;
+    },
+
+    destroy: function() {
+      if(this.get('id')) {
+        this.constructor.identityMap.remove(this.get('id'));
+      }
+      this._super();
     },
 
     destroyResource: function() {
