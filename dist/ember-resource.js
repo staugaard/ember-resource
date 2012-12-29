@@ -1261,7 +1261,7 @@ if (typeof this === 'object') this.LRUCache = LRUCache;
       return deferedSave;
     },
 
-    destroy: function() {
+    destroyResource: function() {
       var previousState = Ember.get(this, 'resourceState'), self = this;
       Ember.set(this, 'resourceState', Ember.Resource.Lifecycle.DESTROYING);
       return Ember.Resource.ajax({
@@ -1271,6 +1271,7 @@ if (typeof this === 'object') this.LRUCache = LRUCache;
         resource: this
       }).done(function() {
         Ember.set(self, 'resourceState', Ember.Resource.Lifecycle.DESTROYED);
+        self.destroy();
       }).fail(function() {
         Ember.set(self, 'resourceState', previousState);
       });
