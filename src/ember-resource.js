@@ -902,7 +902,7 @@
       return deferedSave;
     },
 
-    destroy: function() {
+    destroyResource: function() {
       var previousState = Ember.get(this, 'resourceState'), self = this;
       Ember.set(this, 'resourceState', Ember.Resource.Lifecycle.DESTROYING);
       return Ember.Resource.ajax({
@@ -912,6 +912,7 @@
         resource: this
       }).done(function() {
         Ember.set(self, 'resourceState', Ember.Resource.Lifecycle.DESTROYED);
+        self.destroy();
       }).fail(function() {
         Ember.set(self, 'resourceState', previousState);
       });
