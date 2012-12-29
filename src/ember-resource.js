@@ -902,6 +902,13 @@
       return deferedSave;
     },
 
+    destroy: function() {
+      if(this.get('id')) {
+        this.constructor.identityMap.remove(this.get('id'));
+      }
+      this._super();
+    },
+
     destroyResource: function() {
       var previousState = Ember.get(this, 'resourceState'), self = this;
       Ember.set(this, 'resourceState', Ember.Resource.Lifecycle.DESTROYING);

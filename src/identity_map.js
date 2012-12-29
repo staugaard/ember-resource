@@ -12,6 +12,10 @@
       return LRUCache.prototype.put.apply(this.cache, arguments);
     },
 
+    remove: function() {
+      return LRUCache.prototype.remove.apply(this.cache, arguments);
+    },
+
     clear: function() {
       return LRUCache.prototype.removeAll.apply(this.cache, arguments);
     },
