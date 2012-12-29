@@ -31,8 +31,8 @@ describe('Destroying a resource instance', function() {
         spy(fourthArgument.resource, fourthArgument.operation);
       };
 
-      var resource = Model.create({ name: 'f0o' });
-      resource.destroy();
+      var resource = Model.create({ id: 1, name: 'f0o' });
+      resource.destroyResource();
       server.respond();
 
       expect(spy).toHaveBeenCalledWith(resource, "destroy");

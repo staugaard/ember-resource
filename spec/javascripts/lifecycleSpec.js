@@ -69,7 +69,7 @@ describe('Lifecycle', function() {
         fiveMinutesFromNow.setSeconds(fiveMinutesFromNow.getSeconds() + (60 * 5));
 
         expect(person.get('expireAt')).toBeDefined();
-        expect(person.get('expireAt').getTime()).toBeCloseTo(fiveMinutesFromNow.getTime(), 1000);
+        expect(person.get('expireAt').getTime()).toBeCloseTo(fiveMinutesFromNow.getTime(), 2);
       });
     });
 
