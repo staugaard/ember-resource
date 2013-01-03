@@ -62,7 +62,7 @@
     getValue: Ember.required(Function),
     setValue: Ember.required(Function),
 
-    dependencies: function() {
+    dependencies: Ember.computed('path', function() {
       var deps = ['data.' + this.get('path')];
 
       if(Ember.Resource.SUPPORT_AUTOFETCH) {
@@ -70,13 +70,13 @@
       }
 
       return deps;
-    }.property('path').cacheable(),
+    }).cacheable(),
 
     data: function(instance) {
       return Ember.get(instance, 'data');
     },
 
-    type: function() {
+    type: Ember.computed('theType', function() {
       var type = this.get('theType');
       if (isString(type)) {
         type = Ember.getPath(type);
@@ -87,7 +87,7 @@
         }
       }
       return type;
-    }.property('theType').cacheable(),
+    }).cacheable(),
 
     propertyFunction: function(name, value) {
       var schemaItem = this.constructor.schema[name];
@@ -106,7 +106,8 @@
     },
 
     property: function() {
-      return this.propertyFunction.property.apply(this.propertyFunction, this.get('dependencies')).cacheable();
+      var cp = new Ember.ComputedProperty(this.propertyFunction);
+      return cp.property.apply(cp, this.get('dependencies')).cacheable();
     },
 
     toJSON: function(instance) {
@@ -396,7 +397,7 @@
 
 
   Ember.Resource.HasManySchemaItem = Ember.Resource.AbstractSchemaItem.extend({
-    itemType: function() {
+    itemType: Ember.computed('theItemType', function() {
       var type = this.get('theItemType');
       if (isString(type)) {
         type = Ember.getPath(type);
@@ -407,8 +408,9 @@
         }
       }
       return type;
-    }.property('theItemType').cacheable()
+    }).cacheable()
   });
+
   Ember.Resource.HasManySchemaItem.reopenClass({
     create: function(name, schema) {
       var definition = schema[name];
@@ -677,28 +679,28 @@
         });
       },
 
-      isFetchable: function() {
+      isFetchable: Ember.computed('resourceState', function() {
         var state = Ember.get(this, 'resourceState');
         return state == Ember.Resource.Lifecycle.UNFETCHED || state === Ember.Resource.Lifecycle.EXPIRED;
-      }.property('resourceState').cacheable(),
+      }).cacheable(),
 
-      isAutoFetchable: function() {
+      isAutoFetchable: Ember.computed('isFetchable', 'autoFetch', function() {
         return this.get('isFetchable') && this.get('autoFetch');
-      }.property('isFetchable', 'autoFetch').cacheable(),
+      }).cacheable(),
 
-      isInitializing: function() {
+      isInitializing: Ember.computed('resourceState', function() {
         return (Ember.get(this, 'resourceState') || Ember.Resource.Lifecycle.INITIALIZING) === Ember.Resource.Lifecycle.INITIALIZING;
-      }.property('resourceState').cacheable(),
+      }).cacheable(),
 
-      isFetching: function() {
+      isFetching: Ember.computed('resourceState', function() {
         return (Ember.get(this, 'resourceState')) === Ember.Resource.Lifecycle.FETCHING;
-      }.property('resourceState').cacheable(),
+      }).cacheable(),
 
-      isFetched: function() {
+      isFetched: Ember.computed('resourceState', function() {
         return (Ember.get(this, 'resourceState')) === Ember.Resource.Lifecycle.FETCHED;
-      }.property('resourceState').cacheable(),
+      }).cacheable(),
 
-      isSavable: function() {
+      isSavable: Ember.computed('resourceState', function() {
         var state = Ember.get(this, 'resourceState');
         var unsavableState = [
           Ember.Resource.Lifecycle.INITIALIZING,
@@ -708,7 +710,7 @@
         ];
 
         return state && !unsavableState.contains(state);
-      }.property('resourceState').cacheable(),
+      }).cacheable(),
 
       scheduleFetch: function() {
         if (Ember.get(this, 'isAutoFetchable')) {
@@ -723,7 +725,7 @@
         });
       },
 
-      updateIsExpired: function() {
+      updateIsExpired: Ember.observer(function() {
         var isExpired = Ember.get(this, 'resourceState') === Ember.Resource.Lifecycle.EXPIRED;
         if (isExpired) return true;
 
@@ -739,14 +741,14 @@
             ( (isExpired === false) && oldIsExpired)) {
           Ember.set(this, 'isExpired', isExpired);
         }
-      }.observes('Ember.Resource.Lifecycle.clock.now', 'expireAt', 'resourceState'),
+      }, 'Ember.Resource.Lifecycle.clock.now', 'expireAt', 'resourceState'),
 
-      isExpired: function(name, value) {
+      isExpired: Ember.computed(function(name, value) {
         if (value) {
           Ember.set(this, 'resourceState', Ember.Resource.Lifecycle.EXPIRED);
         }
         return value;
-      }.property().cacheable()
+      }).cacheable()
     })
   };
   Ember.Resource.Lifecycle.clock.start();
@@ -849,9 +851,9 @@
       return json;
     },
 
-    isNew: function() {
+    isNew: Ember.computed('id', function() {
       return !Ember.get(this, 'id');
-    }.property('id').cacheable(),
+    }).cacheable(),
 
     save: function(options) {
       options = options || {};
@@ -950,7 +952,7 @@
 
     for (var propertyName in schema) {
       if (schema.hasOwnProperty(propertyName)) {
-        properties[propertyName] = schema[propertyName].property().cacheable();
+        properties[propertyName] = schema[propertyName].property();
       }
     }
 
@@ -1190,23 +1192,25 @@
         return json;
       }
     },
-    length: function() {
+
+    length: Ember.computed('content.length', 'resourceState', 'isExpired', function() {
       var content = Ember.get(this, 'content');
       var length = content ? Ember.get(content, 'length') : 0;
       if (length === 0 ||  Ember.get(this, 'isExpired'))  this.scheduleFetch();
       return length;
-    }.property('content.length', 'resourceState', 'isExpired').cacheable(),
-    content: function(name, value) {
+    }).cacheable(),
+
+    content: Ember.computed(function(name, value) {
       if (arguments.length === 2) { // setter
         return this.instantiateItems(value);
       }
-    }.property().cacheable(),
+    }).cacheable(),
 
-    autoFetchOnExpiry: function() {
+    autoFetchOnExpiry: Ember.observer(function() {
       if (Ember.get(this, 'isAutoFetchable') && Ember.get(this, 'isExpired') && Ember.get(this, 'hasArrayObservers')) {
         this.fetch();
       }
-    }.observes('isExpired', 'hasArrayObservers'),
+    }, 'isExpired', 'hasArrayObservers'),
 
     toJSON: function() {
       return this.map(function(item) {
