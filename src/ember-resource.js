@@ -70,7 +70,7 @@
       }
 
       return deps;
-    }.property('path'),
+    }.property('path').cacheable(),
 
     data: function(instance) {
       return Ember.get(instance, 'data');
@@ -87,7 +87,7 @@
         }
       }
       return type;
-    }.property('theType'),
+    }.property('theType').cacheable(),
 
     propertyFunction: function(name, value) {
       var schemaItem = this.constructor.schema[name];
@@ -407,7 +407,7 @@
         }
       }
       return type;
-    }.property('theItemType')
+    }.property('theItemType').cacheable()
   });
   Ember.Resource.HasManySchemaItem.reopenClass({
     create: function(name, schema) {
@@ -950,7 +950,7 @@
 
     for (var propertyName in schema) {
       if (schema.hasOwnProperty(propertyName)) {
-        properties[propertyName] = schema[propertyName].property();
+        properties[propertyName] = schema[propertyName].property().cacheable();
       }
     }
 

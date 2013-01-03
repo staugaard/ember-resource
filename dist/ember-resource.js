@@ -429,7 +429,7 @@ if (typeof this === 'object') this.LRUCache = LRUCache;
       }
 
       return deps;
-    }.property('path'),
+    }.property('path').cacheable(),
 
     data: function(instance) {
       return Ember.get(instance, 'data');
@@ -446,7 +446,7 @@ if (typeof this === 'object') this.LRUCache = LRUCache;
         }
       }
       return type;
-    }.property('theType'),
+    }.property('theType').cacheable(),
 
     propertyFunction: function(name, value) {
       var schemaItem = this.constructor.schema[name];
@@ -766,7 +766,7 @@ if (typeof this === 'object') this.LRUCache = LRUCache;
         }
       }
       return type;
-    }.property('theItemType')
+    }.property('theItemType').cacheable()
   });
   Ember.Resource.HasManySchemaItem.reopenClass({
     create: function(name, schema) {
@@ -1309,7 +1309,7 @@ if (typeof this === 'object') this.LRUCache = LRUCache;
 
     for (var propertyName in schema) {
       if (schema.hasOwnProperty(propertyName)) {
-        properties[propertyName] = schema[propertyName].property();
+        properties[propertyName] = schema[propertyName].property().cacheable();
       }
     }
 
