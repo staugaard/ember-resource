@@ -19,7 +19,20 @@ describe('Destroying a resource instance', function() {
     Ember.Resource.errorHandler = null;
   });
 
-  describe('handling errors on destroy', function() {
+  describe('#destroy', function() {
+
+    beforeEach(function() {
+      model = Model.create({id: 1});
+      expect(Model.identityMap.get(1)).toEqual(model);
+      model.destroy();
+    });
+
+    it('should remove the object from the identity map', function() {
+      expect(Model.identityMap.get(1)).toBe(undefined);
+    });
+  });
+
+  describe('handling errors on resource destruction', function() {
     beforeEach(function() {
       server.respondWith('DELETE', '/people', [422, {}, '[["foo", "bar"]]']);
     });
