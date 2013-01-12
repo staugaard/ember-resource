@@ -1140,8 +1140,8 @@ if (typeof this === 'object') this.LRUCache = LRUCache;
       return this._fetchDfd;
     },
 
-    fetch: function() {
-      var ajaxOptions, sideloads;
+    fetch: function(ajaxOptions) {
+      var sideloads;
       if (!Ember.get(this, 'isFetchable')) return $.when();
 
       var url = this.resourceURL();
@@ -1155,11 +1155,11 @@ if (typeof this === 'object') this.LRUCache = LRUCache;
       self.willFetch.call(self);
       Ember.sendEvent(self, 'willFetch');
 
-      ajaxOptions = {
+      ajaxOptions = $.extend({}, ajaxOptions, {
         url: url,
         resource: this,
         operation: 'read'
-      };
+      });
 
       sideloads = this.constructor.sideloads;
 
@@ -1506,7 +1506,7 @@ if (typeof this === 'object') this.LRUCache = LRUCache;
       return this._fetchDfd;
     },
 
-    fetch: function() {
+    fetch: function(ajaxOptions) {
       if (!Ember.get(this, 'isFetchable') || Ember.get(this, 'prePopulated')) return $.when();
 
       var self = this;
@@ -1517,7 +1517,7 @@ if (typeof this === 'object') this.LRUCache = LRUCache;
 
       this.deferedFetch = this._fetch(function(json) {
         Ember.set(self, 'content', self.parse(json));
-      });
+      }, ajaxOptions);
 
       this.deferedFetch.always(function() {
         Ember.sendEvent(self, 'didFetch');
@@ -1532,14 +1532,15 @@ if (typeof this === 'object') this.LRUCache = LRUCache;
         if (type) this.type = type;
       }
     },
-    _fetch: function(callback) {
+    _fetch: function(callback, ajaxOptions) {
       this._resolveType();
-      return Ember.Resource.ajax({
+      ajaxOptions = $.extend({}, ajaxOptions, {
         url: this.resolveUrl(),
         resource: this,
         operation: 'read',
         success: callback
       });
+      return Ember.Resource.ajax(ajaxOptions);
     },
     resolveUrl: function() {
       return this.get('url') || this.type.resourceURL();
