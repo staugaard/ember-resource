@@ -1076,6 +1076,10 @@ if (typeof this === 'object') this.LRUCache = LRUCache;
         return state && !unsavableState.contains(state);
       }).cacheable(),
 
+      isSaving: Ember.computed('resourceState', function() {
+        return (Ember.get(this, 'resourceState')) === Ember.Resource.Lifecycle.SAVING;
+      }).cacheable(),
+
       scheduleFetch: function() {
         if (Ember.get(this, 'isAutoFetchable')) {
           Ember.run.next(this, this.fetch);

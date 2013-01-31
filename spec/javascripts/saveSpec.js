@@ -75,6 +75,12 @@ describe('Saving a resource instance', function() {
         expect(resource.get('resourceState')).toBe(Ember.Resource.Lifecycle.SAVING);
       });
 
+      it('should indicate that it is saving', function() {
+        expect(resource.get('isSaving')).toBe(false);
+        expect(resource.save()).toBeTruthy();
+        expect(resource.get('isSaving')).toBe(true);
+      });
+
       it('should change to previous state after save completes', function() {
         var previousState = resource.get('resourceState');
         expect(resource.save()).toBeTruthy();
