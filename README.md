@@ -1,3 +1,5 @@
+This project has been forked. The canonical repository is now located at: [https://github.com/zendesk/ember-resource][1].
+
 # Ember-Resource [![Build Status](https://secure.travis-ci.org/staugaard/ember-resource.png)](http://travis-ci.org/staugaard/ember-resource)
 
 A simple library to connect your Ember.js application to JSON backends.
@@ -134,3 +136,5 @@ MyApp.Comment = Ember.Resource.define({
   }
 });
 ```
+
+[1]: https://github.com/zendesk/ember-resource
