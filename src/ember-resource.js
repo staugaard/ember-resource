@@ -6,7 +6,7 @@
   var Ember = exports.Ember;
 
   function isString(obj) {
-    return !!(obj === '' || (obj && obj !== String && obj.charCodeAt && obj.substr));
+    return Ember.typeOf(obj) === 'string';
   }
 
   function isObject(obj) {
@@ -14,7 +14,7 @@
   }
 
   Ember.Resource.deepSet = function (obj, path, value) {
-    if (Ember.typeOf(path) === 'string') {
+    if (isString(path)) {
       Ember.Resource.deepSet(obj, path.split('.'), value);
       return;
     }
@@ -142,7 +142,7 @@
       }
 
       if (type) {
-        if (type.isEmberResource || Ember.typeOf(type) === 'string') { // a has-one association
+        if (type.isEmberResource || isString(type)) { // a has-one association
           return Ember.Resource.HasOneSchemaItem.create(name, schema);
         } else if (type.isEmberResourceCollection) { // a has-many association
           return Ember.Resource.HasManySchemaItem.create(name, schema);
@@ -239,7 +239,7 @@
   Ember.Resource.StringAttributeSchemaItem = Ember.Resource.AttributeSchemaItem.extend({
     theType: String,
     typeCast: function (value) {
-      if (value === undefined || value === null || Ember.typeOf(value) === 'string') {
+      if (value === undefined || value === null || isString(value)) {
         return value;
       } else {
         return '' + value;
