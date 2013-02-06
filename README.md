@@ -1,4 +1,4 @@
-This project has been forked. The canonical repository is now located at: [https://github.com/zendesk/ember-resource][1].
+# This project has moved. The lovely people of Zendesk are now maintaining it at: [https://github.com/zendesk/ember-resource][1].
 
 # Ember-Resource [![Build Status](https://secure.travis-ci.org/staugaard/ember-resource.png)](http://travis-ci.org/staugaard/ember-resource)
 
