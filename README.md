@@ -9,7 +9,7 @@ shipped a proper release yet :( Even so, we realize that Ember Resource is
 being used out in the wild. So, what to do?
 
 We're following in the footsteps of the Rails project and the Ember project and
-creating a `1-0-stable` branch. Ember Resource in it's current form will live
+creating a `1-0-stable` branch. Ember Resource in its current form will live
 on in the `1-0-stable` branch.
 
 Henceforth, the `master` branch of Ember Resource will undergo breaking API
