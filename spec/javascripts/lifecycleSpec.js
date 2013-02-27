@@ -88,7 +88,6 @@ describe('Lifecycle', function() {
       expiry.setFullYear(expiry.getFullYear() - 1);
       person.set('expireAt', expiry);
       expect(person.get('isExpired')).toBe(true);
-      expect(person.get('resourceState')).toBe(Ember.Resource.Lifecycle.EXPIRED);
     });
 
     it('should be expired with an expireAt in the future', function() {
