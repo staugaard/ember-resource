@@ -162,4 +162,21 @@ describe('A Resource instance', function () {
       });
     });
   });
+
+  describe("#expireNow", function() {
+    var time;
+    beforeEach(function() {
+      time = new Date();
+      time.setSeconds(time.getSeconds() + (60*5));
+      model = Model.create();
+      model.set('expireAt', time);
+    });
+
+    it('should expire the object immediately', function() {
+      expect(model.get('isExpired')).toBeFalsy();
+      model.expireNow();
+      expect(model.get('isExpired')).toBeTruthy();
+    });
+  });
+
 });

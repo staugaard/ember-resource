@@ -729,6 +729,10 @@
         });
       },
 
+      expireNow: function() {
+        Ember.set(this, 'expireAt', new Date());
+      },
+
       updateIsExpired: Ember.observer(function () {
         var isExpired = Ember.get(this, 'resourceState') === Ember.Resource.Lifecycle.EXPIRED;
         if (isExpired) return true;
@@ -748,11 +752,11 @@
       }, 'Ember.Resource.Lifecycle.clock.now', 'expireAt', 'resourceState'),
 
       isExpired: Ember.computed(function (name, value) {
-        if (value) {
-          Ember.set(this, 'resourceState', Ember.Resource.Lifecycle.EXPIRED);
-        }
-        return value;
-      }).cacheable()
+        var expireAt = this.get('expireAt');
+        var now = new Date();
+
+        return !!(expireAt && expireAt.getTime() <= now.getTime());
+      })
     })
   };
   Ember.Resource.Lifecycle.clock.start();
