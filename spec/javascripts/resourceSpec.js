@@ -148,4 +148,18 @@ describe('A Resource instance', function () {
       expect(model.resourcePropertyDidChange).toHaveBeenCalledWith('name', 'Zebra');
     });
   });
+
+  describe('Given a model with no data', function() {
+    beforeEach(function() {
+      model = Model.create();
+      model.set('data', undefined);
+      expect(Ember.get(model, 'data')).toBe(undefined);
+    });
+
+    describe('updating that model with api data', function() {
+      it('should not blow up', function() {
+        model.updateWithApiData({ foo: 'bar' });
+      });
+    });
+  });
 });
