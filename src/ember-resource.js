@@ -738,24 +738,6 @@
         return this.fetch();
       },
 
-      updateIsExpired: Ember.observer(function () {
-        var isExpired = Ember.get(this, 'resourceState') === Ember.Resource.Lifecycle.EXPIRED;
-        if (isExpired) return true;
-
-        var expireAt = Ember.get(this, 'expireAt');
-        if (expireAt) {
-          var now = Ember.Resource.Lifecycle.clock.get('now');
-          isExpired = expireAt.getTime() <= now.getTime();
-        }
-
-        var oldIsExpired = Ember.get(this, 'isExpired');
-
-        if ((isExpired && !oldIsExpired) ||
-            ((isExpired === false) && oldIsExpired)) {
-          Ember.set(this, 'isExpired', isExpired);
-        }
-      }, 'Ember.Resource.Lifecycle.clock.now', 'expireAt', 'resourceState'),
-
       isExpired: Ember.computed(function (name, value) {
         var expireAt = this.get('expireAt');
         var now = new Date();
