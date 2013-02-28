@@ -179,4 +179,16 @@ describe('A Resource instance', function () {
     });
   });
 
+  describe("#refresh", function() {
+    beforeEach(function() {
+      model = Model.create();
+      spyOn(model, 'fetch');
+    });
+
+    it("should expire and fetch the object", function() {
+      model.refresh();
+      expect(model.get('isExpired')).toBeTruthy();
+      expect(model.fetch).toHaveBeenCalled();
+    });
+  });
 });

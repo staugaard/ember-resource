@@ -733,6 +733,11 @@
         Ember.set(this, 'expireAt', new Date());
       },
 
+      refresh: function() {
+        this.expireNow();
+        return this.fetch();
+      },
+
       updateIsExpired: Ember.observer(function () {
         var isExpired = Ember.get(this, 'resourceState') === Ember.Resource.Lifecycle.EXPIRED;
         if (isExpired) return true;
