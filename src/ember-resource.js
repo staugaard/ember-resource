@@ -681,8 +681,8 @@
 
       isFetchable: Ember.computed('resourceState', function () {
         var state = Ember.get(this, 'resourceState');
-        return state == Ember.Resource.Lifecycle.UNFETCHED || state === Ember.Resource.Lifecycle.EXPIRED;
-      }).cacheable(),
+        return state == Ember.Resource.Lifecycle.UNFETCHED || this.get('isExpired');
+      }),
 
       isAutoFetchable: Ember.computed('isFetchable', 'autoFetch', function () {
         return this.get('isFetchable') && this.get('autoFetch');
