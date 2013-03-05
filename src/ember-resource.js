@@ -457,7 +457,7 @@
     },
 
     setValue: function(instance, value) {
-      throw ('you can not set a remote has many association');
+      throw new Error('you can not set a remote has many association');
     }
   });
   Ember.Resource.HasManyRemoteSchemaItem.reopenClass({
@@ -940,7 +940,7 @@
     for (var name in childSchema) {
       if (childSchema.hasOwnProperty(name)) {
         if (schema.hasOwnProperty(name)) {
-          throw ("Schema item '" + name + "' is already defined");
+          throw new Error("Schema item '" + name + "' is already defined");
         }
 
         schema[name] = childSchema[name];
