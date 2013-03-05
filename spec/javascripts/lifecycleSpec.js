@@ -133,4 +133,33 @@ describe('Lifecycle', function() {
 
   });
 
+  describe('Given an object that observes `isFetchable`', function() {
+    var person, called, obj;
+
+    beforeEach(function() {
+      called = false;
+
+      person = Person.create({
+        state: Ember.Resource.Lifecycle.FETCHED
+      });
+
+      obj = Ember.Object.create({
+        person: person,
+        isFetchedDidChange: function() {
+          called = true;
+        }.observes('person.isFetchable')
+      });
+    });
+
+    describe('When we expire the person object', function() {
+      beforeEach(function() {
+        person.expireNow();
+      });
+
+      it('should call the observer', function() {
+        expect(called).toBe(true);
+      });
+    });
+  });
+
 });

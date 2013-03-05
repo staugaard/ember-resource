@@ -679,7 +679,7 @@
         });
       },
 
-      isFetchable: Ember.computed('resourceState', function() {
+      isFetchable: Ember.computed('resourceState', 'isExpired', function() {
         var state = Ember.get(this, 'resourceState');
         return state == Ember.Resource.Lifecycle.UNFETCHED || this.get('isExpired');
       }),
@@ -737,7 +737,7 @@
         return this.fetch();
       },
 
-      isExpired: Ember.computed(function(name, value) {
+      isExpired: Ember.computed('expireAt', function(name, value) {
         var expireAt = this.get('expireAt');
         var now = new Date();
 
