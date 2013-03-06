@@ -1,4 +1,4 @@
-# Ember-Resource [![Build Status](https://secure.travis-ci.org/zendesk/ember-resource.png)](http://travis-ci.org/zendesk/ember-resource)
+# Ember-Resource
 
 A simple library to connect your Ember.js application to JSON backends.
 
