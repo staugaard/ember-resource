@@ -1165,7 +1165,7 @@
       }
     },
 
-    length: Ember.computed('content.length', 'resourceState', 'isExpired', function() {
+    length: Ember.computed('content.length', 'resourceState', function() {
       var content = Ember.get(this, 'content');
       var length = content ? Ember.get(content, 'length') : 0;
       return length;
