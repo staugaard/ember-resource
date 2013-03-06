@@ -1230,6 +1230,10 @@
     }
   }, Ember.Resource.Lifecycle.prototypeMixin);
 
+  var makeId = function(type, url) {
+    return [Ember.guidFor(type), url].join();
+  };
+
   Ember.ResourceCollection.reopenClass({
     isEmberResourceCollection: true,
     identityMapLimit: Ember.Resource.IdentityMap.DEFAULT_IDENTITY_MAP_LIMIT * 5,
@@ -1244,7 +1248,7 @@
 
       if (!options.prePopulated && options.url) {
         this.identityMap = this.identityMap || new Ember.Resource.IdentityMap(this.identityMapLimit);
-        options.id = options.id || [options.type, options.url];
+        options.id = options.id || makeId(options.type, options.url);
         instance = this.identityMap.get(options.id) || this._super.call(this, options);
         this.identityMap.put(options.id, instance);
       }
