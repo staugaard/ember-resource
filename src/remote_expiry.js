@@ -1,4 +1,4 @@
-(function (exports) {
+(function(exports) {
 
   var Ember = exports.Ember, NullTransport = {
     subscribe: Ember.K,
@@ -8,7 +8,7 @@
   Ember.Resource.PushTransport = NullTransport;
 
   var RemoteExpiry = Ember.Mixin.create({
-    init: function () {
+    init: function() {
       var ret = this._super(),
           self = this,
           remoteExpiryScope = this.get('remoteExpiryKey');
@@ -19,14 +19,14 @@
         return ret;
       }
 
-      Ember.addListener(this, 'didFetch', this, function () {
+      Ember.addListener(this, 'didFetch', this, function() {
         self.subscribeForExpiry();
       });
 
       return ret;
     },
 
-    subscribeForExpiry: function () {
+    subscribeForExpiry: function() {
       var remoteExpiryScope = this.get('remoteExpiryKey'),
           self = this;
 
@@ -38,14 +38,14 @@
         return;
       }
 
-      Ember.Resource.PushTransport.subscribe(remoteExpiryScope, function (message) {
+      Ember.Resource.PushTransport.subscribe(remoteExpiryScope, function(message) {
         self.updateExpiry(message);
       });
 
       this.set('_subscribedForExpiry', true);
     },
 
-    updateExpiry: function (message) {
+    updateExpiry: function(message) {
       var updatedAt = message && message.updatedAt;
       if (!updatedAt) return;
       if (this.stale(updatedAt)) {
@@ -59,7 +59,7 @@
       }
     },
 
-    stale: function (updatedAt) {
+    stale: function(updatedAt) {
       return !this.get('expiryUpdatedAt') || (+this.get('expiryUpdatedAt') < +updatedAt);
     }
   });

@@ -80,7 +80,6 @@ describe('Lifecycle', function() {
 
     beforeEach(function() {
       person = Person.create({id: 1});
-      Ember.Resource.Lifecycle.clock.tick();
     });
 
     it('should be expired with an expireAt in the past', function() {
@@ -98,12 +97,68 @@ describe('Lifecycle', function() {
       expect(person.get('resourceState')).toBe(Ember.Resource.Lifecycle.UNFETCHED);
     });
 
-    it('should expire when "expire" is called', function() {
-      expect(person.get('isExpired')).toBeFalsy();
-      person.expire();
-      waitsFor(function() {
-        return person.get('isExpired');
-      }, 'person never expired', 1000);
+    describe('when "expire" is called', function() {
+      var tickSpy;
+
+      beforeEach(function() {
+        expect(person.get('isExpired')).toBeFalsy();
+        person.set('resourceState', Ember.Resource.Lifecycle.FETCHED);
+        expect(person.get('isFetchable')).toBeFalsy();
+        tickSpy = spyOn(Ember.Resource.Lifecycle.clock, 'tick');
+        person.expire();
+      });
+
+      it('should expire the object', function() {
+        waitsFor(function() {
+          return person.get('isExpired');
+        }, 'person never expired', 1000);
+      });
+
+      it('should result in the object becoming fetchable', function() {
+        waitsFor(function() {
+          return person.get('isFetchable');
+        }, 'person to become fetchable', 1000);
+      });
+
+      it('should not tick the ember resource clock', function() {
+        waitsFor(function() {
+          return person.get('isExpired') && person.get('isFetchable');
+        }, 'person never expired', 1000);
+
+        runs(function() {
+          expect(tickSpy).not.toHaveBeenCalled();
+        });
+      });
+    });
+
+  });
+
+  describe('Given an object that observes `isFetchable`', function() {
+    var person, called, obj;
+
+    beforeEach(function() {
+      called = false;
+
+      person = Person.create({
+        state: Ember.Resource.Lifecycle.FETCHED
+      });
+
+      obj = Ember.Object.create({
+        person: person,
+        isFetchedDidChange: function() {
+          called = true;
+        }.observes('person.isFetchable')
+      });
+    });
+
+    describe('When we expire the person object', function() {
+      beforeEach(function() {
+        person.expireNow();
+      });
+
+      it('should call the observer', function() {
+        expect(called).toBe(true);
+      });
     });
   });
 

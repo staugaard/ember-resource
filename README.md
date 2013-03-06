@@ -1,16 +1,25 @@
-# Ember-Resource [![Build Status](https://secure.travis-ci.org/zendesk/ember-resource.png)](http://travis-ci.org/zendesk/ember-resource)
+# Ember-Resource
 
 A simple library to connect your Ember.js application to JSON backends.
 
+* Current stable version: `1.0`
+* Download: \[[Development version][1]] \[[Minified version][2]]
+* CDN: `//cdnjs.cloudflare.com/ajax/libs/ember-resource.js/1.0/ember-resource.min.js`
+
 ## Ember Resource 2.0
 
-We're big fans of semantic versioning. Unfortunately Ember Resource has not
-shipped a proper release yet :( Even so, we realize that Ember Resource is
-being used out in the wild. So, what to do?
+If you are using Ember Resource, you are probably using an unreleased copy.
+Ember Resource never had proper releases before.
+
+In order to continue development of Ember Resource while not breaking your
+application, we are marking a cutoff point for non-breaking API changes.
+[Semantic versioning][3] is a great tool for marking breaking API changes,
+but we had one problem; there were no released versions of Ember Resource.
+So, we've named our fork in the road `Ember Resource 1.0`.
 
 We're following in the footsteps of the Rails project and the Ember project and
 creating a `1-0-stable` branch. Ember Resource in its current form will live
-on in the `1-0-stable` branch.
+on in the [`1-0-stable` branch][4].
 
 Henceforth, the `master` branch of Ember Resource will undergo breaking API
 changes, and thus, will eventually be named Ember Resource 2.0.
@@ -168,3 +177,8 @@ You may obtain a copy of the License at
 http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+
+[1]: https://cdnjs.cloudflare.com/ajax/libs/ember-resource.js/1.0/ember-resource.js
+[2]: https://cdnjs.cloudflare.com/ajax/libs/ember-resource.js/1.0/ember-resource.min.js
+[3]: http://semver.org/
+[4]: https://github.com/zendesk/ember-resource/tree/1-0-stable
