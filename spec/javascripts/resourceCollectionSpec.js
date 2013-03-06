@@ -2,10 +2,13 @@
 
 describe('ResourceCollection', function() {
   var Model;
-  it("reads from it's url property if present", function() {
+  beforeEach(function() {
     Model = Em.Resource.define({
       url: '/url/from/resource'
     });
+  });
+
+  it("reads from it's url property if present", function() {
 
     var collection = Em.ResourceCollection.create({
       type: Model,
@@ -39,20 +42,30 @@ describe('ResourceCollection', function() {
 
   });
 
-  describe('destroying a ResourceCollection instance', function() {
+  describe('Given a ResourceCollection instance', function() {
     var instance;
     beforeEach(function() {
       instance = Em.ResourceCollection.create({
         type: Model,
         url: '/url/from/collection'
       });
-      instance.destroy();
     });
 
-    it('should remove it from the identity map', function() {
-      var identity = [Model, '/url/from/collection']
-      expect(Em.ResourceCollection.identityMap.get(identity)).toBeFalsy();
+    it('should be present in the identity map', function() {
+      var id = instance.get('id');
+      expect(Em.ResourceCollection.identityMap.get(id)).toBeTruthy();
     });
-    
+
+    describe('when destroyed', function() {
+      beforeEach(function() {
+        instance.destroy();
+      });
+
+      it('should remove it from the identity map', function() {
+        var id = instance.get('id');
+        expect(Em.ResourceCollection.identityMap.get(id)).toBeFalsy();
+      });
+    });
+
   });
 });
