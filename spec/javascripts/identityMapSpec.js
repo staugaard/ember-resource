@@ -7,7 +7,7 @@ describe('identity map', function() {
     var Model;
     beforeEach(function() {
       Model = Em.Resource.define({
-        skipIdentityMap: true
+        useIdentityMap: false
       });
     });
 

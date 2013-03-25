@@ -960,7 +960,7 @@
         var instance;
 
         var id = data.id || options.id;
-        if (id && !options.skipIdentityMap && !this.skipIdentityMap) {
+        if (id && !options.skipIdentityMap && this.useIdentityMap) {
           this.identityMap = this.identityMap || new Ember.Resource.IdentityMap(this.identityMapLimit);
 
           id = id.toString();
@@ -1052,8 +1052,10 @@
         classOptions.identityMapLimit = options.identityMapLimit;
       }
 
-      if(options.skipIdentityMap) {
-        classOptions.skipIdentityMap = options.skipIdentityMap;
+      if(typeof(options.useIdentityMap) !== "undefined") {
+        classOptions.useIdentityMap = options.useIdentityMap;
+      } else {
+        classOptions.useIdentityMap = true;
       }
 
       if (options.sideloads) {
