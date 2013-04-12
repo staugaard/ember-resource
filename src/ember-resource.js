@@ -14,6 +14,11 @@
     return obj === Object(obj);
   }
 
+  // Used when evaluating schemas to turn a type String into a class.
+  Ember.Resource.lookUpType = function(string) {
+    return getPath(string);
+  };
+
   Ember.Resource.deepSet = function(obj, path, value) {
     if (isString(path)) {
       Ember.Resource.deepSet(obj, path.split('.'), value);
@@ -75,7 +80,7 @@
     type: Ember.computed('theType', function() {
       var type = this.get('theType');
       if (isString(type)) {
-        type = getPath(type);
+        type = Ember.Resource.lookUpType(type);
         if (type) {
           this.set('theType', type);
         } else {
@@ -387,7 +392,7 @@
     itemType: Ember.computed('theItemType', function() {
       var type = this.get('theItemType');
       if (isString(type)) {
-        type = getPath(type);
+        type = Ember.Resource.lookUpType(type);
         if (type) {
           this.set('theItemType', type);
         } else {
@@ -1137,7 +1142,7 @@
     },
     _resolveType: function() {
       if (isString(this.type)) {
-        var type = getPath(this.type);
+        var type = Ember.Resource.lookUpType(this.type);
         if (type) this.type = type;
       }
     },
