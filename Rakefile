@@ -3,7 +3,10 @@ require 'pathname'
 require 'rake-pipeline'
 
 namespace :dist do
+
+  desc "Build dist/ember-resource.js"
   task :build do
+    rm_rf "tmp"
     Rake::Pipeline::Project.new('AssetFile').invoke
   end
 
