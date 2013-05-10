@@ -209,7 +209,7 @@ describe('A Resource instance', function () {
 
     it("should change the schema", function() {
       model = Model.create({description: "Boo"});
-      expect(model.getPath("data.description")).toEqual("Boo");
+      expect(model.toJSON().description).toEqual("Boo");
     });
   });
 });
