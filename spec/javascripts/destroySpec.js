@@ -40,14 +40,7 @@ describe('Destroying a resource instance', function() {
     });
 
     it('should not throw an exception', function() {
-      var exceptionThrown = false;
-      try {
-        model.destroy(); 
-      } catch (e) {
-        exceptionThrown = true;
-      }
-
-      expect(exceptionThrown).toBe(false);
+      expect(model.destroy.bind(model)).not.toThrow();
     });
   });
 
