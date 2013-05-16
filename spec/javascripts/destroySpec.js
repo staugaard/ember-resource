@@ -32,6 +32,25 @@ describe('Destroying a resource instance', function() {
     });
   });
 
+  describe('#destroy without an identityMap on the Model', function() {
+
+    beforeEach(function() {
+      model = Model.create();
+      model.set('id', 1);
+    });
+
+    it('should not throw an exception', function() {
+      var exceptionThrown = false;
+      try {
+        model.destroy(); 
+      } catch (e) {
+        exceptionThrown = true;
+      }
+
+      expect(exceptionThrown).toBe(false);
+    });
+  });
+
   describe('handling errors on resource destruction', function() {
     beforeEach(function() {
       server.respondWith('DELETE', '/people', [422, {}, '[["foo", "bar"]]']);
