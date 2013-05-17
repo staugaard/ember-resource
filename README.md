@@ -167,6 +167,16 @@ On Mac OS:
 
     open spec/runner.html
 
+## Building a distribution
+
+There is a rake task to generate an asset for distribution.
+
+```
+  rake dist:build
+```
+
+The output will be put in the `dist/` folder.
+
 ## Copyright and license
 
 Copyright 2013 Zendesk
