@@ -1,5 +1,6 @@
 describe('deferred fetch', function() {
-  var Person, people, server;
+  var Person, people, server,
+      PERSON_DATA = { "id": 1, "name": "Mick Staugaard" };
 
   beforeEach(function() {
     Person = Ember.Resource.define({
@@ -13,7 +14,7 @@ describe('deferred fetch', function() {
     server = sinon.fakeServer.create();
     server.respondWith("GET", "/people/1",
                        [200, { "Content-Type": "application/json" },
-                       '{ "id": 1, "name": "Mick Staugaard" }']);
+                       JSON.stringify(PERSON_DATA) ]);
 
 
   });
@@ -23,18 +24,41 @@ describe('deferred fetch', function() {
   });
 
   describe("fetched() for resources", function() {
-    it("should resolve when the fetch completes", function() {
-      var handler = jasmine.createSpy();
+    it("should resolve with the resource when the fetch completes", function() {
+      var handler = jasmine.createSpy('onFetch');
 
       var person = Person.create({id: 1});
-      person.fetched().done(function() {
-        handler();
-      });
+      person.fetched().done(handler);
 
       person.fetch();
       server.respond();
 
-      expect(handler).toHaveBeenCalled();
+      expect(handler).toHaveBeenCalledWith(PERSON_DATA, person);
+    });
+  });
+
+  describe('fetch() for unfetched resources', function() {
+    it('resolves with the resource when the server responds', function() {
+      var handler = jasmine.createSpy('onFetch'),
+          person = Person.create({id: 1});
+
+      person.fetch().done(handler);
+      server.respond();
+
+      expect(handler).toHaveBeenCalledWith(PERSON_DATA, person);
+    });
+  });
+
+  describe('fetch() for fetched, non-expired resources', function() {
+    it('should resolve with the resource immediately', function() {
+      var handler = jasmine.createSpy('onFetch'),
+          person = Person.create({id: 1});
+
+      person.fetch();
+      server.respond();
+
+      person.fetch().done(handler);
+      expect(handler).toHaveBeenCalledWith(PERSON_DATA, person);
     });
   });
 
@@ -91,10 +115,9 @@ describe('deferred fetch', function() {
 
   describe("fetched() for resource collections", function() {
     beforeEach(function() {
-      server.restore();
       server.respondWith("GET", "/people",
                          [200, { "Content-Type": "application/json" },
-                         '[{ "id": 1, "name": "Mick Staugaard" }]']);
+                         JSON.stringify([ PERSON_DATA ]) ]);
       people = Ember.ResourceCollection.create({type: Person});
 
     });
@@ -103,16 +126,14 @@ describe('deferred fetch', function() {
       window.stopHere = false;
     });
 
-    it("should resolve when the fetch completes", function() {
+    it("should resolve with the collection when the fetch completes", function() {
 
-      var handler = jasmine.createSpy();
+      var handler = jasmine.createSpy('onFetch');
 
       runs(function() {
         people.expire();
 
-        people.fetched().done(function() {
-          handler();
-        });
+        people.fetched().done(handler);
 
         people.fetch();
         server.respond();
@@ -121,7 +142,7 @@ describe('deferred fetch', function() {
       waits(1000);
 
       runs(function() {
-        expect(handler).toHaveBeenCalled();
+        expect(handler).toHaveBeenCalledWith([PERSON_DATA], people);
       });
     });
   });
