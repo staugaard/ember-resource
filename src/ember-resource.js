@@ -68,7 +68,7 @@
     setValue: Ember.required(Function),
 
     dependencies: Ember.computed('path', function() {
-      var deps = ['data.' + this.get('path')];
+      var deps = (this.get('path') !== this.get('name') ? [this.get('path')] : []);
 
       return deps;
     }).cacheable(),
@@ -734,9 +734,26 @@
 
     updateWithApiData: function(json) {
       var data = Ember.get(this, 'data');
+
       if (data) {
+        var parsedJson = this.constructor.parse(json);
+
         Ember.beginPropertyChanges(data);
-        Ember.Resource.deepMerge(data, this.constructor.parse(json));
+
+        for (var resource in parsedJson) {
+          if (parsedJson.hasOwnProperty(resource)) {
+            Ember.propertyWillChange(this, resource);
+          }
+        }
+
+        Ember.Resource.deepMerge(data, parsedJson);
+
+        for (var resource in parsedJson) {
+          if (parsedJson.hasOwnProperty(resource)) {
+            Ember.propertyDidChange(this, resource);
+          }
+        }
+
         Ember.endPropertyChanges(data);
       }
     },
