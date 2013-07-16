@@ -67,11 +67,7 @@
     getValue: Ember.required(Function),
     setValue: Ember.required(Function),
 
-    dependencies: Ember.computed('path', function() {
-      var deps = (this.get('path') !== this.get('name') ? [this.get('path')] : []);
-
-      return deps;
-    }).cacheable(),
+    dependencies: ['_new_data'],
 
     data: function(instance) {
       return Ember.get(instance, 'data');
@@ -736,25 +732,11 @@
       var data = Ember.get(this, 'data');
 
       if (data) {
-        var parsedJson = this.constructor.parse(json);
-
         Ember.beginPropertyChanges(data);
-
-        for (var resource in parsedJson) {
-          if (parsedJson.hasOwnProperty(resource)) {
-            Ember.propertyWillChange(this, resource);
-          }
-        }
-
-        Ember.Resource.deepMerge(data, parsedJson);
-
-        for (var resource in parsedJson) {
-          if (parsedJson.hasOwnProperty(resource)) {
-            Ember.propertyDidChange(this, resource);
-          }
-        }
-
+        Ember.Resource.deepMerge(data, this.constructor.parse(json));
         Ember.endPropertyChanges(data);
+
+        Ember.propertyDidChange(this, '_new_data');
       }
     },
 
