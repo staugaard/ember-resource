@@ -120,7 +120,7 @@ describe('identity map', function() {
       });
     });
 
-    describe('Creating another instance with empty API data', function() {
+    describe('Updating that instance with empty API data', function() {
       beforeEach(function() {
         Address.create({ id: 1 }, {});
       });
