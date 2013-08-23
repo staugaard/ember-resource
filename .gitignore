@@ -3,3 +3,4 @@ Gemfile.lock
 tmp
 node_modules
 /dist
+.ruby-version
