@@ -81,4 +81,58 @@ describe('ResourceCollection', function() {
     });
 
   });
+
+  describe("freshData", function() {
+    var collection, server;
+    beforeEach(function() {
+      server = sinon.fakeServer.create();
+      server.respondWith("GET", "/people",
+                         [200, { "Content-Type": "application/json" },
+                          JSON.stringify([{id: 1, name: "Foo"}]) ]);
+
+      collection = Em.ResourceCollection.extend({
+        type: Model,
+
+        url: function() {
+          return '/people';
+        }.property().cacheable(),
+
+        freshData: function() {
+          return !!this.get("_fresh");
+        }
+
+      }).create();
+
+    });
+
+    afterEach(function() {
+      server.restore();
+    });
+
+    describe("when data is fresh", function() {
+      beforeEach(function() {
+        collection.set("_fresh", true);
+      });
+
+      it("should update data", function() {
+        collection.fetch();
+        server.respond();
+        expect(collection.get("length")).to.equal(1);
+      });
+    });
+
+    describe("when data is not fresh", function() {
+      beforeEach(function() {
+        collection.set("_fresh", false);
+      });
+
+      it("should update data", function() {
+        collection.fetch();
+        server.respond();
+        expect(collection.get("length")).to.equal(0);
+      });
+    });
+
+  });
+
 });

@@ -209,4 +209,52 @@ describe('A Resource instance', function () {
       expect(model.toJSON().description).to.equal("Boo");
     });
   });
+
+  describe("freshData", function() {
+    beforeEach(function() {
+      server = sinon.fakeServer.create();
+      server.respondWith("GET", "/people/1",
+                         [200, { "Content-Type": "application/json" },
+                          JSON.stringify({id: 1, name: "Foo"}) ]);
+
+      Model.reopen({
+        freshData: function() {
+          return !!this.get("_fresh");
+        }
+      });
+
+      model = Model.create({id: 1});
+
+    });
+
+    afterEach(function() {
+      server.restore();
+    });
+
+    describe("when data is fresh", function() {
+      beforeEach(function() {
+        model.set("_fresh", true);
+      });
+
+      it("should update data", function() {
+        model.fetch();
+        server.respond();
+        expect(model.get("name")).to.equal("Foo");
+      });
+    });
+
+    describe("when data is not fresh", function() {
+      beforeEach(function() {
+        model.set("_fresh", false);
+      });
+
+      it("should update data", function() {
+        model.fetch();
+        server.respond();
+
+        expect(model.get("name")).to.be.undefined;
+      });
+    });
+
+  });
 });
