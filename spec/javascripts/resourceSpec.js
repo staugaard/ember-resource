@@ -210,7 +210,7 @@ describe('A Resource instance', function () {
     });
   });
 
-  describe("freshData", function() {
+  describe("isFresh", function() {
     beforeEach(function() {
       server = sinon.fakeServer.create();
       server.respondWith("GET", "/people/1",
@@ -218,7 +218,7 @@ describe('A Resource instance', function () {
                           JSON.stringify({id: 1, name: "Foo"}) ]);
 
       Model.reopen({
-        freshData: function() {
+        isFresh: function() {
           return !!this.get("_fresh");
         }
       });

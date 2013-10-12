@@ -686,7 +686,7 @@
         return !!(expireAt && expireAt.getTime() <= now.getTime());
       }).volatile(),
 
-      freshData: function(data) {
+      isFresh: function(data) {
         return true;
       },
 
@@ -711,7 +711,7 @@
 
       parsedData = this.constructor.parse(json);
 
-      if(!this.freshData(parsedData)) { return; }
+      if(!this.isFresh(parsedData)) { return; }
 
       Ember.beginPropertyChanges(data);
       Ember.Resource.deepMerge(data, parsedData);
@@ -1120,7 +1120,7 @@
       this._fetch(ajaxOptions)
         .done(function(json) {
           parsedData = self.parse(json);
-          if(self.freshData(parsedData)) {
+          if(self.isFresh(parsedData)) {
             set(self, 'content', parsedData);
           }
           self.fetched().resolve(json, self);

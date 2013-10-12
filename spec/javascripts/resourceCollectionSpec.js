@@ -82,7 +82,7 @@ describe('ResourceCollection', function() {
 
   });
 
-  describe("freshData", function() {
+  describe("isFresh", function() {
     var collection, server;
     beforeEach(function() {
       server = sinon.fakeServer.create();
@@ -97,7 +97,7 @@ describe('ResourceCollection', function() {
           return '/people';
         }.property().cacheable(),
 
-        freshData: function() {
+        isFresh: function() {
           return !!this.get("_fresh");
         }
 
