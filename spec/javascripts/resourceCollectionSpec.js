@@ -83,8 +83,9 @@ describe('ResourceCollection', function() {
   });
 
   describe("isFresh", function() {
-    var collection, server;
+    var collection, server, isFresh;
     beforeEach(function() {
+      isFresh = sinon.stub();
       server = sinon.fakeServer.create();
       server.respondWith("GET", "/people",
                          [200, { "Content-Type": "application/json" },
@@ -97,9 +98,7 @@ describe('ResourceCollection', function() {
           return '/people';
         }.property().cacheable(),
 
-        isFresh: function() {
-          return !!this.get("_fresh");
-        }
+        isFresh: isFresh
 
       }).create();
 
@@ -111,7 +110,7 @@ describe('ResourceCollection', function() {
 
     describe("when data is fresh", function() {
       beforeEach(function() {
-        collection.set("_fresh", true);
+        isFresh.returns(true);
       });
 
       it("should update data", function() {
@@ -123,7 +122,7 @@ describe('ResourceCollection', function() {
 
     describe("when data is not fresh", function() {
       beforeEach(function() {
-        collection.set("_fresh", false);
+        isFresh.returns(false);
       });
 
       it("should update data", function() {
