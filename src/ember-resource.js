@@ -115,7 +115,9 @@
   });
   Ember.Resource.AbstractSchemaItem.reopenClass({
     create: function(name, schema) {
-      var instance = this._super.apply(this);
+      var createWithMixins = this.superclass.createWithMixins || this._super;
+
+      var instance = createWithMixins.apply(this);
       instance.set('name', name);
       return instance;
     }
@@ -935,6 +937,8 @@
       if (klass === this) {
         var instance;
 
+        var createWithMixins = this.superclass.createWithMixins || this._super;
+
         var id = data.id || options.id;
         if (id && !options.skipIdentityMap && this.useIdentityMap) {
           this.identityMap = this.identityMap || new Ember.Resource.IdentityMap(this.identityMapLimit);
@@ -943,7 +947,7 @@
           instance = this.identityMap.get(id);
 
           if (!instance) {
-            instance = this._super.call(this, { data: data });
+            instance = createWithMixins.call(this, { data: data });
             this.identityMap.put(id, instance);
           } else {
             instance.updateWithApiData(data);
@@ -952,7 +956,7 @@
             delete options.id;
           }
         } else {
-          instance = this._super.call(this, { data: data });
+          instance = createWithMixins.call(this, { data: data });
         }
 
         delete options.data;
@@ -1205,7 +1209,7 @@
 
       var instance;
 
-      var createWithMixins = Ember.ResourceCollection.superclass.createWithMixins || this._super;
+      var createWithMixins = this.superclass.createWithMixins || this._super;
 
       if (!options.prePopulated && options.url && this.useIdentityMap) {
         this.identityMap = this.identityMap || new Ember.Resource.IdentityMap(this.identityMapLimit);
