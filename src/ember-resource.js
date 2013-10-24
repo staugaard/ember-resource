@@ -1205,15 +1205,17 @@
 
       var instance;
 
+      var createWithMixins = Ember.ResourceCollection.superclass.createWithMixins || this._super;
+
       if (!options.prePopulated && options.url && this.useIdentityMap) {
         this.identityMap = this.identityMap || new Ember.Resource.IdentityMap(this.identityMapLimit);
         options.id = options.id || makeId(options.type, options.url);
-        instance = this.identityMap.get(options.id) || this._super.call(this, options);
+        instance = this.identityMap.get(options.id) || createWithMixins.call(this, options);
         this.identityMap.put(options.id, instance);
       }
 
       if (!instance) {
-        instance = this._super.call(this, options);
+        instance = createWithMixins.call(this, options);
 
         if (content) {
           set(instance, 'content', instance.parse(content));
