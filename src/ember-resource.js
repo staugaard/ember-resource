@@ -686,6 +686,10 @@
         return !!(expireAt && expireAt.getTime() <= now.getTime());
       }).volatile(),
 
+      isFresh: function(data) {
+        return true;
+      },
+
       destroy: function() {
         if (this.get('id') && this.constructor.identityMap) {
           this.constructor.identityMap.remove(this.get('id'));
@@ -701,13 +705,18 @@
     isEmberResource: true,
 
     updateWithApiData: function(json) {
-      var data = Ember.get(this, 'data');
+      var data = Ember.get(this, 'data'), parsedData;
 
-      if (data) {
-        Ember.beginPropertyChanges(data);
-        Ember.Resource.deepMerge(data, this.constructor.parse(json));
-        Ember.endPropertyChanges(data);
-      }
+      if (!data) { return; }
+
+      parsedData = this.constructor.parse(json);
+
+      if(!this.isFresh(parsedData)) { return; }
+
+      Ember.beginPropertyChanges(data);
+      Ember.Resource.deepMerge(data, parsedData);
+      Ember.endPropertyChanges(data);
+
     },
 
     willFetch: function() {},
@@ -1106,11 +1115,14 @@
 
       Ember.sendEvent(self, 'willFetch');
 
-      var result = this.deferredFetch = $.Deferred();
+      var result = this.deferredFetch = $.Deferred(), parsedData;
 
       this._fetch(ajaxOptions)
         .done(function(json) {
-          set(self, 'content', self.parse(json));
+          parsedData = self.parse(json);
+          if(self.isFresh(parsedData)) {
+            set(self, 'content', parsedData);
+          }
           self.fetched().resolve(json, self);
           result.resolve(json, self);
         })
