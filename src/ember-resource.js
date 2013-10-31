@@ -824,7 +824,9 @@
         resource: this
       };
 
-      if (Ember.get(this, 'isNew')) {
+      var isCreate = Ember.get(this, 'isNew');
+
+      if (isCreate) {
         ajaxOptions.type = 'POST';
         ajaxOptions.url = this.constructor.resourceURL();
         ajaxOptions.operation = 'create';
@@ -853,11 +855,13 @@
         if (options.update !== false && Ember.typeOf(data) === 'object') {
           self.updateWithApiData(data);
         }
-      });
 
-      deferedSave.always(function() {
-        self.didSave.call(self);
-        Ember.sendEvent(self, 'didSave');
+        self.didSave.call(self, {created: isCreate});
+        Ember.sendEvent(self, 'didSave', {created: isCreate});
+
+      }).fail(function() {
+        self.didFail.call(self);
+        Ember.sendEvent(self, 'didFail');
       });
 
       return deferedSave;
