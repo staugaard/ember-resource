@@ -824,7 +824,9 @@
         resource: this
       };
 
-      if (Ember.get(this, 'isNew')) {
+      var isCreate = Ember.get(this, 'isNew');
+
+      if (isCreate) {
         ajaxOptions.type = 'POST';
         ajaxOptions.url = this.constructor.resourceURL();
         ajaxOptions.operation = 'create';
@@ -856,8 +858,8 @@
       });
 
       deferedSave.always(function() {
-        self.didSave.call(self);
-        Ember.sendEvent(self, 'didSave');
+        self.didSave.call(self, {created: isCreate});
+        Ember.sendEvent(self, 'didSave', {created: isCreate});
       });
 
       return deferedSave;

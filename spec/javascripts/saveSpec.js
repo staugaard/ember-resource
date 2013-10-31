@@ -100,6 +100,39 @@ describe('Saving a resource instance', function() {
 
   });
 
+  describe('save callbacks:', function() {
+    var resource, eventHandler;
+    describe('when saving a new record', function() {
+      beforeEach(function() {
+        server.respondWith('POST', '/people', [201, {}, '']);
+        resource = Model.create({ name: 'foo' });
+        sinon.spy(resource, 'didSave');
+        resource.save();
+        server.respond();
+      });
+
+      it('should pass created: true to didSave', function() {
+        expect(resource.didSave.calledWith({created: true})).to.be.ok;
+      });
+    });
+
+    describe('when saving an existing record', function() {
+      beforeEach(function() {
+        server.respondWith('PUT', '/people/1', [200, {}, '']);
+        resource = Model.create({ id: 1, name: 'foo' });
+        sinon.spy(resource, 'didSave');
+        resource.save();
+        server.respond();
+      });
+
+      it('should pass created: false to didSave', function() {
+        expect(resource.didSave.calledWith({created: false})).to.be.ok;
+      });
+    });
+
+  });
+
+
   describe('updating from response', function() {
     var resource;
 
