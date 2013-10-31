@@ -102,6 +102,35 @@ describe('Saving a resource instance', function() {
 
   describe('save callbacks:', function() {
     var resource, eventHandler;
+
+    describe('when saving succeeds', function() {
+      beforeEach(function() {
+        resource = Model.create({ name: 'foo' });
+        sinon.spy(resource, 'didSave');
+        server.respondWith('POST', '/people', [201, {}, '']);
+        resource.save();
+        server.respond();
+      });
+
+      it('should call "didSave"', function() {
+        expect(resource.didSave.called).to.be.ok;
+      });
+    });
+
+    describe('when saving fails', function() {
+      beforeEach(function() {
+        resource = Model.create({ name: 'foo' });
+        sinon.spy(resource, 'didSave');
+        server.respondWith('POST', '/people', [500, {}, '']);
+        resource.save();
+        server.respond();
+      });
+
+      it('should call "didFail"', function() {
+        expect(resource.didSave.called).to.not.be.ok;
+      });
+    });
+
     describe('when saving a new record', function() {
       beforeEach(function() {
         server.respondWith('POST', '/people', [201, {}, '']);

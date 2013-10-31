@@ -855,11 +855,13 @@
         if (options.update !== false && Ember.typeOf(data) === 'object') {
           self.updateWithApiData(data);
         }
-      });
 
-      deferedSave.always(function() {
         self.didSave.call(self, {created: isCreate});
         Ember.sendEvent(self, 'didSave', {created: isCreate});
+
+      }).fail(function() {
+        self.didFail.call(self);
+        Ember.sendEvent(self, 'didFail');
       });
 
       return deferedSave;
