@@ -20,6 +20,8 @@
     };
   };
 
+  var slice = Array.prototype.slice;
+
   exports.Ember.Resource.ajax = function(options) {
     options.dataType = options.dataType || 'json';
     options.type     = options.type     || 'GET';
@@ -30,11 +32,23 @@
       options.error = errorHandlerWithContext(window.Ember.Resource.errorHandler, options);
     }
 
-    return $.ajax(options);
+    var dfd = $.Deferred();
+
+    $.ajax(options).done(function() {
+      var args = slice.apply(arguments);
+      Em.run(function() {
+        dfd.resolve.apply(dfd, args);
+      });
+    }).fail(function() {
+      var args = slice.apply(arguments);
+      Em.run(function() {
+        dfd.reject.apply(dfd, args);
+      });
+    });
+
+    return dfd.promise();
   };
 
-
-  var slice = Array.prototype.slice;
 
   exports.Em.Resource.fetch = function(resource) {
     return Em.Resource.ajax.apply(Em.Resource, slice.call(arguments, 1));
