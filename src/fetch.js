@@ -37,12 +37,12 @@
     $.ajax(options).done(function() {
       var args = slice.apply(arguments);
       Em.run(function() {
-        dfd.resolve.apply(dfd, args);
+        dfd.resolveWith(options.context, args);
       });
     }).fail(function() {
       var args = slice.apply(arguments);
       Em.run(function() {
-        dfd.reject.apply(dfd, args);
+        dfd.rejectWith(options.context, args);
       });
     });
 
