@@ -1,4 +1,4 @@
-describe('Destroying a resource instance', function() {
+describe('Destroying resources', function() {
   var Model, model, server;
 
   beforeEach(function() {
@@ -44,23 +44,44 @@ describe('Destroying a resource instance', function() {
     });
   });
 
-  describe('handling errors on resource destruction', function() {
-    beforeEach(function() {
-      server.respondWith('DELETE', '/people', [422, {}, '[["foo", "bar"]]']);
+  describe('destroyResource', function() {
+    var resource;
+
+    describe('instance destruction', function() {
+      beforeEach(function() {
+        server.respondWith('DELETE', '/people/1', [200, {}, '[["foo", "bar"]]']);
+        resource = Model.create({ id: 1, name: 'f0o' });
+        resource.destroyResource();
+        server.respond();
+      });
+
+      it('should defer destroying the Em.Resource instance till the next run loop', function(done) {
+        expect(resource.get('isDestroyed')).to.not.be.ok;
+        Em.run.next(function() {
+          expect(resource.get('isDestroyed')).to.be.ok;
+          done();
+        });
+      });
     });
 
-    it('should pass a reference to the resource to the error handling function', function() {
-      var spy = sinon.spy();
+    describe('handling errors', function() {
+      beforeEach(function() {
+        server.respondWith('DELETE', '/people/1', [422, {}, '[["foo", "bar"]]']);
+      });
 
-      Ember.Resource.errorHandler = function(a, b, c, fourthArgument) {
-        spy(fourthArgument.resource, fourthArgument.operation);
-      };
+      it('should pass a reference to the resource to the error handling function', function() {
+        var spy = sinon.spy();
 
-      var resource = Model.create({ id: 1, name: 'f0o' });
-      resource.destroyResource();
-      server.respond();
+        Ember.Resource.errorHandler = function(a, b, c, fourthArgument) {
+          spy(fourthArgument.resource, fourthArgument.operation);
+        };
 
-      expect(spy.calledWith(resource, "destroy")).to.be.ok;
+        resource = Model.create({ id: 1, name: 'f0o' });
+        resource.destroyResource();
+        server.respond();
+
+        expect(spy.calledWith(resource, "destroy")).to.be.ok;
+      });
     });
   });
 });

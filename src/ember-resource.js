@@ -878,7 +878,9 @@
         resource: this
       }).done(function() {
         set(self, 'resourceState', Ember.Resource.Lifecycle.DESTROYED);
-        self.destroy();
+        Em.run.next(function() {
+          self.destroy();
+        });
       }).fail(function() {
         set(self, 'resourceState', previousState);
       });
