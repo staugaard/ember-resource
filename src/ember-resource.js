@@ -668,6 +668,7 @@
 
       expire: function () {
         Ember.run.next(this, function () {
+          if(getPath(this, 'isDestroyed')) { return; }
           set(this, 'expireAt', new Date());
         });
       },

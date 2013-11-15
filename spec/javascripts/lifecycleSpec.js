@@ -134,6 +134,15 @@ describe('Lifecycle', function() {
       });
     });
 
+    describe('on a destroyed object', function() {
+      beforeEach(function() {
+        person.destroy();
+      });
+
+      it('should not cause an error', function() {
+        expect(function() { person.expire(); }).to.not.throw();
+      });
+    });
   });
 
   describe('Given an object that observes `isFetchable`', function() {
