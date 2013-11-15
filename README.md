@@ -176,6 +176,13 @@ different signature. Those deferreds resolve with the resource and a String
 describing the action that occurred (one of
 `[ "create", "update", "destroy" ]`).
 
+Note about `destroyResource`: when you destroy a resource, the Em.Resource
+instance in memory is also `destroy`-ed, in that `.destroy()` is called on
+it. This action is, however, deferred to the next run-loop after the AJAX
+callbacks run. This is to allow any UI behavior that requires to access this
+Em.Resource instance to work without any errors.
+
+
 ## Testing
 
 Tests can be run from the command line, or in a browser:
