@@ -31,7 +31,7 @@
     if (path.length === 0) {
       set(obj, key, value);
     } else {
-      var newObj = Ember.get(obj, key);
+      var newObj = getPath(obj, key);
 
       if (newObj === null || newObj === undefined) {
         newObj = {};
@@ -49,8 +49,8 @@
 
     for (var key in objB) {
       if (objB.hasOwnProperty(key)) {
-        oldValue = Ember.get(objA, key);
-        newValue = Ember.get(objB, key);
+        oldValue = getPath(objA, key);
+        newValue = getPath(objB, key);
 
         if (Ember.typeOf(newValue) === 'object' && Ember.typeOf(oldValue) === 'object') {
           Ember.propertyWillChange(objA, key);
@@ -75,7 +75,7 @@
     }).cacheable(),
 
     data: function(instance) {
-      return Ember.get(instance, 'data');
+      return getPath(instance, 'data');
     },
 
     type: Ember.computed('theType', function() {
@@ -186,7 +186,7 @@
     },
 
     toJSON: function(instance) {
-      return Ember.get(instance, this.name);
+      return getPath(instance, this.name);
     }
   });
 
@@ -266,7 +266,7 @@
       }
     },
     toJSON: function(instance) {
-      var value = Ember.get(instance, this.name);
+      var value = getPath(instance, this.name);
       return value ? value.toJSON() : value;
     }
   });
@@ -311,14 +311,14 @@
       if (!data) return;
 
       if (value instanceof this.get('type')) {
-        value = Ember.get(value, 'data');
+        value = getPath(value, 'data');
       }
 
       Ember.Resource.deepSet(data, this.get('path'), value);
     },
 
     toJSON: function(instance) {
-      var value = Ember.get(instance, this.name);
+      var value = getPath(instance, this.name);
       return value ? value.toJSON() : value;
     }
   });
@@ -370,7 +370,7 @@
     setValue: function(instance, value) {
       var data = this.data(instance);
       if (!data) return;
-      var id = Ember.get(value || {}, 'id');
+      var id = getPath(value || {}, 'id');
       Ember.Resource.deepSet(data, this.get('path'), id);
     }
   });
@@ -432,7 +432,7 @@
   Ember.Resource.HasManyRemoteSchemaItem = Ember.Resource.HasManySchemaItem.extend({
     dependencies: ['id', 'isInitializing'],
     getValue: function(instance) {
-      if (Ember.get(instance, 'isInitializing')) return;
+      if (getPath(instance, 'isInitializing')) return;
 
       var options = {
         type: this.get('itemType')
@@ -497,7 +497,7 @@
     },
 
     toJSON: function(instance) {
-      var value = Ember.get(instance, this.name);
+      var value = getPath(instance, this.name);
       return value ? value.toJSON() : value;
     }
   });
@@ -530,7 +530,7 @@
     },
 
     toJSON: function(instance) {
-      var value = Ember.get(instance, this.name);
+      var value = getPath(instance, this.name);
       return value ? value.mapProperty('id') : value;
     }
   });
@@ -584,7 +584,7 @@
 
         var instance = this._super.apply(this, arguments);
 
-        if (Ember.get(instance, 'resourceState') === Ember.Resource.Lifecycle.INITIALIZING) {
+        if (getPath(instance, 'resourceState') === Ember.Resource.Lifecycle.INITIALIZING) {
           set(instance, 'resourceState', Ember.Resource.Lifecycle.UNFETCHED);
         }
 
@@ -603,7 +603,7 @@
 
         var updateExpiry = function () {
           var expireAt = new Date();
-          expireAt.setSeconds(expireAt.getSeconds() + Ember.get(self, 'expireIn'));
+          expireAt.setSeconds(expireAt.getSeconds() + getPath(self, 'expireIn'));
           set(self, 'expireAt', expireAt);
         };
 
@@ -624,7 +624,7 @@
 
         var resourceStateBeforeSave;
         Ember.addListener(this, 'willSave', this, function() {
-          resourceStateBeforeSave = Ember.get(self, 'resourceState');
+          resourceStateBeforeSave = getPath(self, 'resourceState');
           set(self, 'resourceState', Ember.Resource.Lifecycle.SAVING);
         });
 
@@ -634,24 +634,24 @@
       },
 
       isFetchable: Ember.computed('resourceState', 'isExpired', function() {
-        var state = Ember.get(this, 'resourceState');
+        var state = getPath(this, 'resourceState');
         return state == Ember.Resource.Lifecycle.UNFETCHED || this.get('isExpired');
       }).volatile(),
 
       isInitializing: Ember.computed('resourceState', function () {
-        return (Ember.get(this, 'resourceState') || Ember.Resource.Lifecycle.INITIALIZING) === Ember.Resource.Lifecycle.INITIALIZING;
+        return (getPath(this, 'resourceState') || Ember.Resource.Lifecycle.INITIALIZING) === Ember.Resource.Lifecycle.INITIALIZING;
       }).cacheable(),
 
       isFetching: Ember.computed('resourceState', function() {
-        return (Ember.get(this, 'resourceState')) === Ember.Resource.Lifecycle.FETCHING;
+        return (getPath(this, 'resourceState')) === Ember.Resource.Lifecycle.FETCHING;
       }).cacheable(),
 
       isFetched: Ember.computed('resourceState', function() {
-        return (Ember.get(this, 'resourceState')) === Ember.Resource.Lifecycle.FETCHED;
+        return (getPath(this, 'resourceState')) === Ember.Resource.Lifecycle.FETCHED;
       }).cacheable(),
 
       isSavable: Ember.computed('resourceState', function() {
-        var state = Ember.get(this, 'resourceState');
+        var state = getPath(this, 'resourceState');
         var unsavableState = [
           Ember.Resource.Lifecycle.INITIALIZING,
           Ember.Resource.Lifecycle.FETCHING,
@@ -663,7 +663,7 @@
       }).cacheable(),
 
       isSaving: Ember.computed('resourceState', function() {
-        return (Ember.get(this, 'resourceState')) === Ember.Resource.Lifecycle.SAVING;
+        return (getPath(this, 'resourceState')) === Ember.Resource.Lifecycle.SAVING;
       }).cacheable(),
 
       expire: function () {
@@ -708,7 +708,7 @@
     isEmberResource: true,
 
     updateWithApiData: function(json) {
-      var data = Ember.get(this, 'data'), parsedData;
+      var data = getPath(this, 'data'), parsedData;
 
       if (!data) { return; }
 
@@ -737,7 +737,7 @@
 
     fetch: function(ajaxOptions) {
       var sideloads;
-      if (!Ember.get(this, 'isFetchable')) return $.when(this.get('data'), this);
+      if (!getPath(this, 'isFetchable')) return $.when(this.get('data'), this);
 
       var url = this.resourceURL();
 
@@ -745,7 +745,7 @@
 
       var self = this;
 
-      if (this.deferredFetch && !Ember.get(this, 'isExpired')) return this.deferredFetch;
+      if (this.deferredFetch && !getPath(this, 'isExpired')) return this.deferredFetch;
 
       self.willFetch.call(self);
       Ember.sendEvent(self, 'willFetch');
@@ -812,12 +812,12 @@
     },
 
     isNew: Ember.computed('id', function() {
-      return !Ember.get(this, 'id');
+      return !getPath(this, 'id');
     }).cacheable(),
 
     save: function(options) {
       options = options || {};
-      if (!Ember.get(this, 'isSavable')) return false;
+      if (!getPath(this, 'isSavable')) return false;
 
       var ajaxOptions = {
         contentType: 'application/json',
@@ -825,7 +825,7 @@
         resource: this
       };
 
-      var isCreate = Ember.get(this, 'isNew');
+      var isCreate = getPath(this, 'isNew');
 
       if (isCreate) {
         ajaxOptions.type = 'POST';
@@ -869,7 +869,7 @@
     },
 
     destroyResource: function() {
-      var previousState = Ember.get(this, 'resourceState'), self = this;
+      var previousState = getPath(this, 'resourceState'), self = this;
       set(this, 'resourceState', Ember.Resource.Lifecycle.DESTROYING);
       return Ember.Resource.ajax({
         type: 'DELETE',
@@ -1073,7 +1073,7 @@
         return this.url(instance);
       } else if (this.url) {
         if (instance) {
-          var id = Ember.get(instance, 'id');
+          var id = getPath(instance, 'id');
           if (id == null || id === '') {
             return this.url;
           }
@@ -1116,11 +1116,11 @@
     },
 
     fetch: function(ajaxOptions) {
-      if (!Ember.get(this, 'isFetchable') || Ember.get(this, 'prePopulated')) return $.when(this);
+      if (!getPath(this, 'isFetchable') || getPath(this, 'prePopulated')) return $.when(this);
 
       var self = this;
 
-      if (this.deferredFetch && !Ember.get(this, 'isExpired')) return this.deferredFetch;
+      if (this.deferredFetch && !getPath(this, 'isExpired')) return this.deferredFetch;
 
       Ember.sendEvent(self, 'willFetch');
 
@@ -1189,8 +1189,8 @@
     },
 
     length: Ember.computed('content.length', 'resourceState', function() {
-      var content = Ember.get(this, 'content');
-      var length = content ? Ember.get(content, 'length') : 0;
+      var content = getPath(this, 'content');
+      var length = content ? getPath(content, 'length') : 0;
       return length;
     }).cacheable(),
 
