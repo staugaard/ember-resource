@@ -1,6 +1,7 @@
 describe('identity map', function() {
+  var identityMapLimit = 10;
   var Address = Em.Resource.define({
-    identityMapLimit: 10
+    identityMapLimit: identityMapLimit
   });
 
   it('should default to a limit of DEFAULT_IDENTITY_MAP_LIMIT', function() {
@@ -62,4 +63,30 @@ describe('identity map', function() {
 
 
   });
+
+  describe('An identity map at its storage limit', function() {
+    var firstObject, id;
+
+    beforeEach(function() {
+      Address.identityMap.clear()
+
+      id = 1;
+      firstObject = Address.create({ id: id++ });
+
+      for (var i=0; i<identityMapLimit-1; i++) {
+        Address.create({ id: id++ });
+      }
+    });
+
+    describe('When adding an item that will cause an overflow', function() {
+      beforeEach(function() {
+        Address.create({ id: id++ });
+      });
+
+      it('should destroy the object that falls out', function() {
+        expect(firstObject.get('isDestroyed')).toBe(true);
+      });
+    });
+  });
+
 });

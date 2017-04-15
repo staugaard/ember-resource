@@ -994,6 +994,7 @@
       options = options || {};
 
       var klass = this.subclassFor(options, data), idToRestore = options.id;
+      var leastRecentlyUsed;
 
       if (klass === this) {
         var instance;
@@ -1006,7 +1007,12 @@
 
           if (!instance) {
             instance = this._super.call(this, { data: data });
-            this.identityMap.put(id, instance);
+            leastRecentlyUsed = this.identityMap.put(id, instance);
+
+            if (leastRecentlyUsed && leastRecentlyUsed.value.destroy) {
+              leastRecentlyUsed.value.destroy();
+            }
+
           } else {
             instance.updateWithApiData(data);
             // ignore incoming resourceState and id arguments
